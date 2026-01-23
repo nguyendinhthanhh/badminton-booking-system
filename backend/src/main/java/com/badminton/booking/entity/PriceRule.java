@@ -23,6 +23,18 @@ public class PriceRule {
     @Column(name = "price", precision = 10, scale = 2)
     private BigDecimal price;
 
+    @Column(name = "day_of_week")
+    private Integer dayOfWeek;
+
+    @Column(name = "effective_from")
+    private java.time.LocalDate effectiveFrom;
+
+    @Column(name = "effective_to")
+    private java.time.LocalDate effectiveTo;
+
+    @Column(name = "is_active")
+    private Boolean isActive;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "court_id")
     private BadmintonCourt court;

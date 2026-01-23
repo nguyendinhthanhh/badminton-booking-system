@@ -13,7 +13,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "time_slots")
-public class TimeSlot {
+public class TimeSlot  {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "time_slots_id_gen")
     @SequenceGenerator(name = "time_slots_id_gen", sequenceName = "time_slots_slot_id_seq", allocationSize = 1)
@@ -29,6 +29,12 @@ public class TimeSlot {
 
     @Column(name = "start_time")
     private LocalTime startTime;
+
+    @Column(name = "day_of_week")
+    private Integer dayOfWeek;
+
+    @Column(name = "is_active")
+    private Boolean isActive;
 
     @OneToMany(mappedBy = "slot")
     private Set<BookingDetail> bookingDetails = new LinkedHashSet<>();

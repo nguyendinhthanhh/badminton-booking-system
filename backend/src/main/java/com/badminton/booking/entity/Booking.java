@@ -61,4 +61,19 @@ public class Booking {
     @OneToMany(mappedBy = "booking")
     private Set<Review> reviews = new LinkedHashSet<>();
 
+    @OneToMany(mappedBy = "booking")
+    private Set<RacketRental> racketRentals = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "booking")
+    private Set<LockerRental> lockerRentals = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "booking")
+    private Set<Notification> notifications = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "booking")
+    private Set<Refund> refunds = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "booking")
+    private Set<CoachBooking> coachBookings = new LinkedHashSet<>();
+
 }

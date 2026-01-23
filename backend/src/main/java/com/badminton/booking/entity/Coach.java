@@ -8,6 +8,8 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -43,5 +45,11 @@ public class Coach {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
+    @OneToMany(mappedBy = "coach")
+    private Set<CoachBooking> coachBookings = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "coach")
+    private Set<CoachSchedule> coachSchedules = new LinkedHashSet<>();
 
 }
