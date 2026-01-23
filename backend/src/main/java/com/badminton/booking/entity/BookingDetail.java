@@ -1,6 +1,7 @@
 package com.badminton.booking.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,6 +20,16 @@ public class BookingDetail {
 
     @Column(name = "price_at_booking", precision = 10, scale = 2)
     private BigDecimal priceAtBooking;
+
+    @Size(max = 50)
+    @Column(name = "status", length = 50)
+    private String status;
+
+    @Column(name = "actual_start_time")
+    private java.time.LocalDateTime actualStartTime;
+
+    @Column(name = "actual_end_time")
+    private java.time.LocalDateTime actualEndTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id")

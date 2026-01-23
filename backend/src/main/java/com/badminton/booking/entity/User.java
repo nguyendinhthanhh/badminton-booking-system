@@ -52,8 +52,6 @@ public class User {
     @JoinColumn(name = "role_id")
     private Role role;
 
-    @OneToMany(mappedBy = "user")
-    private Set<BadmintonRacket> badmintonRackets = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "user")
     private Set<Booking> bookings = new LinkedHashSet<>();
@@ -75,5 +73,14 @@ public class User {
 
     @OneToMany(mappedBy = "manager")
     private Set<Warehouse> warehouses = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "user")
+    private Set<Notification> notifications = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "processedBy")
+    private Set<Refund> processedRefunds = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "user")
+    private Set<CoachBooking> coachBookings = new LinkedHashSet<>();
 
 }
