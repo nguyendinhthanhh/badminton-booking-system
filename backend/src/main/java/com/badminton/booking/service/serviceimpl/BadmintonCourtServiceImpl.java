@@ -37,9 +37,8 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
 
     @Override
     public Page<BadmintonCourtResponse> getAllBadmintonCourts(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
 
-        Page<BadmintonCourt> badmintonCourts = badmintonCourtRepo.findAll(pageable);
+        Page<BadmintonCourt> badmintonCourts = badmintonCourtRepo.findAll(PageRequest.of(page, size));
 
         return badmintonCourts.map(badmintonCourtMapper::toResponse);
     }
