@@ -20,6 +20,7 @@ import java.util.List;
 @Tag(name = "Badminton Courts", description = "Endpoints for managing badminton courts")
 @RestController
 @RequestMapping("/api/courts")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class BadmintonCourtController {
 
 
