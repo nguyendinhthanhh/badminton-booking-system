@@ -3,9 +3,8 @@ package com.badminton.booking.controller;
 
 import com.badminton.booking.dto.request.LoginRequest;
 import com.badminton.booking.dto.response.AuthResponse;
-import com.badminton.booking.dto.response.RegisterRequest;
+import com.badminton.booking.dto.request.RegisterRequest;
 import com.badminton.booking.security.AuthService;
-import com.badminton.booking.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
