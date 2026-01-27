@@ -5,6 +5,10 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 @Getter
 @Setter
 @Entity
@@ -17,19 +21,33 @@ public class BadmintonRacket {
     private Integer id;
 
     @Size(max = 50)
-    @Column(name = "color", length = 50)
-    private String color;
+    @Column(name = "racket_code", length = 50, unique = true)
+    private String racketCode;
 
     @Size(max = 100)
-    @Column(name = "material", length = 100)
-    private String material;
+    @Column(name = "brand", length = 100)
+    private String brand;
 
     @Size(max = 100)
-    @Column(name = "name", length = 100)
-    private String name;
+    @Column(name = "model", length = 100)
+    private String model;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
+    @Size(max = 50)
+    @Column(name = "status", length = 50)
+    private String status;
+
+    @Column(name = "rental_price", precision = 10, scale = 2)
+    private BigDecimal rentalPrice;
+
+    @Size(max = 50)
+    @Column(name = "condition_status", length = 50)
+    private String conditionStatus;
+
+    @Lob
+    @Column(name = "description")
+    private String description;
+
+    @OneToMany(mappedBy = "racket")
+    private Set<RacketRental> racketRentals = new LinkedHashSet<>();
 
 }

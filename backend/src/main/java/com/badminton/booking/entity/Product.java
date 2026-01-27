@@ -13,7 +13,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "products")
-public class Product {
+public class Product  {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "products_id_gen")
     @SequenceGenerator(name = "products_id_gen", sequenceName = "products_product_id_seq", allocationSize = 1)
