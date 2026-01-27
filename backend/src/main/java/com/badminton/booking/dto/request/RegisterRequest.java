@@ -1,4 +1,4 @@
-package com.badminton.booking.dto.response;
+package com.badminton.booking.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

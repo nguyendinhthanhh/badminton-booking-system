@@ -2,7 +2,7 @@ package com.badminton.booking.security;
 
 import com.badminton.booking.dto.request.LoginRequest;
 import com.badminton.booking.dto.response.AuthResponse;
-import com.badminton.booking.dto.response.RegisterRequest;
+import com.badminton.booking.dto.request.RegisterRequest;
 import com.badminton.booking.entity.RefreshToken;
 import com.badminton.booking.entity.User;
 
