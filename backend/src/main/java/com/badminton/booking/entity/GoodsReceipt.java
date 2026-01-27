@@ -1,6 +1,7 @@
 package com.badminton.booking.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -37,6 +38,9 @@ public class GoodsReceipt {
     @Column(name = "note")
     private String note;
 
+    @Column(name = "total_price")
+    private Double totalPrice;
+
     @OneToMany(mappedBy = "goodsReceipt", cascade = CascadeType.ALL)
     private Set<GoodsReceiptItem> items = new LinkedHashSet<>();
-}
+    }
