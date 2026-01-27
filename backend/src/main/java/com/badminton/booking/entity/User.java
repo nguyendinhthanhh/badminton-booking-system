@@ -61,8 +61,6 @@ public class User {
     @OneToMany(mappedBy = "staff")
     private Set<CheckInLog> checkInLogs = new LinkedHashSet<>();
 
-    @OneToMany(mappedBy = "user")
-    private Set<Coach> coaches = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "user")
     private Set<Order> orders = new LinkedHashSet<>();
