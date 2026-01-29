@@ -5,7 +5,7 @@ import GuestHome from './pages/customer/GuestHome';
 import CourtDetails from './pages/customer/CourtDetails';
 import Dashboard from './pages/admin/Dashboard';
 import CourtManagement from './pages/admin/CourtManagement';
-import AuthPage from './pages/auth/LoginPage.jsx'; // Trang Login của bạn
+import AuthPage from './pages/auth/AuthPage.jsx'; // Trang Login của bạn
 import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
 import './App.css';
 import {useEffect} from "react";
