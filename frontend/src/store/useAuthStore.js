@@ -24,6 +24,17 @@ const useAuthStore = create((set) => ({
             throw err; // Để component xử lý hiển thị lỗi
         }
     },
+    handleRegister: async (registerData) => {
+        set({ isLoading: true });
+        try {
+            const res = await axiosClient.post('/auth/register', registerData);
+            set({ isLoading: false });
+            return res.data;
+        } catch (err) {
+            set({ isLoading: false });
+            throw err;
+        }
+    },
 
     logout: () => {
         set({ user: null, accessToken: null });
