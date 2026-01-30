@@ -13,10 +13,15 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "products")
-public class Product  {
+public class Product {
+
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "products_id_gen")
-    @SequenceGenerator(name = "products_id_gen", sequenceName = "products_product_id_seq", allocationSize = 1)
+    @SequenceGenerator(
+            name = "products_id_gen",
+            sequenceName = "products_product_id_seq",
+            allocationSize = 1
+    )
     @Column(name = "product_id", nullable = false)
     private Integer id;
 
@@ -28,7 +33,7 @@ public class Product  {
     private String description;
 
     @Size(max = 150)
-    @Column(name = "name", length = 150)
+    @Column(name = "name", length = 150, nullable = false)
     private String name;
 
     @Size(max = 100)
@@ -42,10 +47,11 @@ public class Product  {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    @OneToMany(mappedBy = "product")
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<OrderItem> orderItems = new LinkedHashSet<>();
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "warehouse_id")
-    private Warehouse warehouse;
 
+    // Quan hệ với Warehouse
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_id", nullable = false)
+    private Warehouse warehouse;
 }

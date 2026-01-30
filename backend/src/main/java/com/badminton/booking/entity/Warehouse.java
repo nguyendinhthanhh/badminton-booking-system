@@ -13,9 +13,14 @@ import java.util.Set;
 @Entity
 @Table(name = "warehouses")
 public class Warehouse {
+
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "warehouses_id_gen")
-    @SequenceGenerator(name = "warehouses_id_gen", sequenceName = "warehouses_warehouse_id_seq", allocationSize = 1)
+    @SequenceGenerator(
+            name = "warehouses_id_gen",
+            sequenceName = "warehouses_warehouse_id_seq",
+            allocationSize = 1
+    )
     @Column(name = "warehouse_id", nullable = false)
     private Integer id;
 
@@ -35,6 +40,6 @@ public class Warehouse {
     @JoinColumn(name = "manager_id")
     private User manager;
 
-    @OneToMany(mappedBy = "warehouse")
+    @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Product> products = new LinkedHashSet<>();
 }
