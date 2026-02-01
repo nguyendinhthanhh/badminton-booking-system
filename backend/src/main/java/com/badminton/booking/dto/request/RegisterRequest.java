@@ -1,11 +1,14 @@
 package com.badminton.booking.dto.request;
 
+import com.badminton.booking.entity.enums.Gender;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
 
 @Data
 @Builder
@@ -24,10 +27,13 @@ public class RegisterRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 3, message = "Password must be at least 3 characters")
     private String password;
+
     @NotBlank(message = "Email is required")
     private String email;
 
     private String phoneNumber;
 
+    private Gender gender;
 
+    private LocalDate dateOfBirth;
 }

@@ -3,19 +3,15 @@ package com.badminton.booking.controller;
 import com.badminton.booking.dto.request.BadmintonCourtCreateRequest;
 import com.badminton.booking.dto.request.BadmintonCourtUpdateRequest;
 import com.badminton.booking.dto.response.BadmintonCourtResponse;
-import com.badminton.booking.entity.BadmintonCourt;
 import com.badminton.booking.service.BadmintonCourtService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "Badminton Courts", description = "Endpoints for managing badminton courts")
 @RestController
@@ -47,9 +43,9 @@ public class BadmintonCourtController {
 
     @Operation(summary = "Get All Badminton Courts", description = "Retrieve a paginated list of all badminton courts")
     @GetMapping("/all")
-    public ResponseEntity<Page<BadmintonCourtResponse>> getAllCourts(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+    public ResponseEntity<Slice<BadmintonCourtResponse>> getAllCourts(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
 
-        Page<BadmintonCourtResponse> responses = badmintonCourtService.getAllBadmintonCourts(page,size);
+        Slice<BadmintonCourtResponse> responses = badmintonCourtService.getAllBadmintonCourts(page,size);
 
         return ResponseEntity.ok(responses);
     }

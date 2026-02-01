@@ -33,6 +33,21 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Thường disable nếu dùng JWT
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Cho phép truy cập công khai cho guest users
+                        .requestMatchers("/api/courts/all", "/api/courts/findById/**").permitAll()
+                        // Cho phép kiểm tra username tồn tại
+                        .requestMatchers("/api/users/check-username").permitAll()
+                        // Cho phép forgot password và reset password
+                        .requestMatchers("/api/password/forgot", "/api/password/reset", "/api/password/validate-token").permitAll()
+                        // Cho phép truy cập Swagger UI và API docs công khai
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/api-docs/**"
+                        ).permitAll()
+                        // API quản lý người dùng - yêu cầu xác thực
+                        .requestMatchers("/api/users/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -53,17 +68,16 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000","http://localhost:8080"));
+        // Cho phép frontend ở port 3000, 3001 và Swagger UI
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "http://localhost:8080"
+        ));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
-
-        // 5. QUAN TRỌNG: Cho phép gửi Cookie (vì bạn đang dùng HttpOnly Cookie cho Refresh Token)
         configuration.setAllowCredentials(true);
-
-        // 6. Thời gian cache kết quả Preflight request
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

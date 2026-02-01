@@ -1,7 +1,7 @@
 package com.badminton.booking.entity;
 
+import com.badminton.booking.entity.enums.PaymentMethod;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
@@ -25,9 +25,9 @@ public class Payment {
     @Column(name = "amount", precision = 10, scale = 2)
     private BigDecimal amount;
 
-    @Size(max = 50)
     @Column(name = "method", length = 50)
-    private String method;
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod method;
 
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "transaction_date")

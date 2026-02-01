@@ -4,22 +4,51 @@ import CourtFormModal from '../../components/admin/CourtFormModal';
 import CourtDetailModal from '../../components/admin/CourtDetailModal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import Toast from '../../components/common/Toast';
+import TableSkeleton from '../../components/common/TableSkeleton';
+import CacheIndicator from '../../components/common/CacheIndicator';
+import ModalSkeleton from '../../components/common/ModalSkeleton';
+import useDataStore from '../../store/useDataStore';
 
 const CourtManagement = () => {
+  // Get cached data from store
+  const {
+    courts: cachedCourts,
+    setCourts: setCachedCourts,
+    setCourtSearchTerm,
+    invalidateCourts,
+    isCacheValid
+  } = useDataStore();
+
   const [courts, setCourts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(cachedCourts.searchTerm);
   const [editingCourt, setEditingCourt] = useState(null);
   const [selectedCourt, setSelectedCourt] = useState(null);
   const [deletingCourt, setDeletingCourt] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [loadingCourt, setLoadingCourt] = useState(false);
+  const [loadingModalType, setLoadingModalType] = useState(null); // 'detail' or 'form'
   const [toast, setToast] = useState(null);
+  const [isUsingCache, setIsUsingCache] = useState(false);
 
   useEffect(() => {
-    fetchCourts();
+    // Check if we have valid cached data
+    if (isCacheValid(cachedCourts.lastFetch) && cachedCourts.data) {
+      // Use cached data
+      setCourts(cachedCourts.data);
+      setLoading(false);
+      setIsUsingCache(true);
+      
+      // Hide cache indicator after 3 seconds
+      setTimeout(() => setIsUsingCache(false), 3000);
+    } else {
+      // Fetch fresh data
+      setIsUsingCache(false);
+      fetchCourts();
+    }
   }, []);
 
   const fetchCourts = async () => {
@@ -27,6 +56,9 @@ const CourtManagement = () => {
       setLoading(true);
       const response = await courtService.getAllCourts(0, 20);
       setCourts(response.content);
+      
+      // Cache the data
+      setCachedCourts(response.content);
     } catch (error) {
       console.error('Error fetching courts:', error);
       showToast('Failed to load courts', 'error');
@@ -42,6 +74,7 @@ const CourtManagement = () => {
   const handleCreateCourt = async (courtData) => {
     try {
       await courtService.createCourt(courtData);
+      invalidateCourts(); // Invalidate cache
       await fetchCourts();
       showToast('Court created successfully!', 'success');
     } catch (error) {
@@ -54,6 +87,7 @@ const CourtManagement = () => {
   const handleUpdateCourt = async (courtData) => {
     try {
       await courtService.updateCourt(editingCourt.id, courtData);
+      invalidateCourts(); // Invalidate cache
       await fetchCourts();
       showToast('Court updated successfully!', 'success');
       setEditingCourt(null);
@@ -70,6 +104,7 @@ const CourtManagement = () => {
     try {
       setDeleteLoading(true);
       await courtService.deleteCourt(deletingCourt.id);
+      invalidateCourts(); // Invalidate cache
       await fetchCourts();
       showToast('Court deleted successfully!', 'success');
       setShowDeleteDialog(false);
@@ -82,19 +117,51 @@ const CourtManagement = () => {
     }
   };
 
-  const handleEdit = (court) => {
-    setEditingCourt(court);
-    setShowModal(true);
+  const handleEdit = async (court) => {
+    setLoadingCourt(true);
+    
+    // Only show skeleton if API takes longer than 300ms
+    const skeletonTimer = setTimeout(() => {
+      setLoadingModalType('form');
+    }, 300);
+    
+    try {
+      const details = await courtService.getCourtById(court.id);
+      clearTimeout(skeletonTimer);
+      setLoadingModalType(null);
+      setEditingCourt(details);
+      setShowModal(true);
+    } catch (error) {
+      clearTimeout(skeletonTimer);
+      setLoadingModalType(null);
+      console.error('Error fetching court details:', error);
+      showToast('Failed to load court details', 'error');
+    } finally {
+      setLoadingCourt(false);
+    }
   };
 
   const handleViewDetails = async (court) => {
+    setLoadingCourt(true);
+    
+    // Only show skeleton if API takes longer than 300ms
+    const skeletonTimer = setTimeout(() => {
+      setLoadingModalType('detail');
+    }, 300);
+    
     try {
       const details = await courtService.getCourtById(court.id);
+      clearTimeout(skeletonTimer);
+      setLoadingModalType(null);
       setSelectedCourt(details);
       setShowDetailModal(true);
     } catch (error) {
+      clearTimeout(skeletonTimer);
+      setLoadingModalType(null);
       console.error('Error fetching court details:', error);
       showToast('Failed to load court details', 'error');
+    } finally {
+      setLoadingCourt(false);
     }
   };
 
@@ -106,6 +173,11 @@ const CourtManagement = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingCourt(null);
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setCourtSearchTerm(value); // Save to cache
   };
 
   const getStatusColor = (status) => {
@@ -132,7 +204,10 @@ const CourtManagement = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Courts Management</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Courts Management</h1>
+            <CacheIndicator isCached={isUsingCache} />
+          </div>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             Manage inventory, surfaces, and availability.
           </p>
@@ -153,7 +228,7 @@ const CourtManagement = () => {
           <input
             type="text"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search courts..."
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-2 focus:ring-[#135bec]"
           />
@@ -163,8 +238,8 @@ const CourtManagement = () => {
       {/* Table */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a202c] overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#135bec] mx-auto"></div>
+          <div className="overflow-x-auto">
+            <TableSkeleton rows={8} columns={5} />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -214,21 +289,24 @@ const CourtManagement = () => {
                       <div className="flex items-center justify-end gap-2">
                         <button 
                           onClick={() => handleViewDetails(court)}
-                          className="text-slate-400 hover:text-blue-600 p-1 transition-colors"
+                          disabled={loadingCourt}
+                          className="text-slate-400 hover:text-blue-600 p-1 transition-colors disabled:opacity-50"
                           title="View Details"
                         >
                           <span className="material-symbols-outlined text-[20px]">visibility</span>
                         </button>
                         <button 
                           onClick={() => handleEdit(court)}
-                          className="text-slate-400 hover:text-[#135bec] p-1 transition-colors"
+                          disabled={loadingCourt}
+                          className="text-slate-400 hover:text-[#135bec] p-1 transition-colors disabled:opacity-50"
                           title="Edit"
                         >
                           <span className="material-symbols-outlined text-[20px]">edit</span>
                         </button>
                         <button 
                           onClick={() => handleDeleteClick(court)}
-                          className="text-slate-400 hover:text-red-600 p-1 transition-colors"
+                          disabled={loadingCourt}
+                          className="text-slate-400 hover:text-red-600 p-1 transition-colors disabled:opacity-50"
                           title="Delete"
                         >
                           <span className="material-symbols-outlined text-[20px]">delete</span>
@@ -242,6 +320,11 @@ const CourtManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Modal Skeleton Loading */}
+      {loadingCourt && loadingModalType && (
+        <ModalSkeleton type={loadingModalType} />
+      )}
 
       {/* Modals */}
       <CourtFormModal

@@ -9,10 +9,11 @@ import com.badminton.booking.mapper.BadmintonCourtMapper;
 import com.badminton.booking.repository.BadmintonCourtRepo;
 import com.badminton.booking.service.BadmintonCourtService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -36,9 +37,12 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
         }
 
     @Override
-    public Page<BadmintonCourtResponse> getAllBadmintonCourts(int page, int size) {
+    @Transactional(readOnly = true)
+    public Slice<BadmintonCourtResponse> getAllBadmintonCourts(int page, int size) {
 
-        Page<BadmintonCourt> badmintonCourts = badmintonCourtRepo.findAll(PageRequest.of(page, size));
+        // Use repository method that returns a Slice to avoid executing an expensive COUNT query
+        Pageable pageable = PageRequest.of(page, size);
+        Slice<BadmintonCourt> badmintonCourts = badmintonCourtRepo.findAllBy(pageable);
 
         return badmintonCourts.map(badmintonCourtMapper::toResponse);
     }

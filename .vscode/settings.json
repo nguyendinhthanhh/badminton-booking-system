@@ -1,3 +1,4 @@
 {
-    "javascript.autoClosingTags": false
+  "javascript.autoClosingTags": false,
+  "java.compile.nullAnalysis.mode": "automatic"
 }
