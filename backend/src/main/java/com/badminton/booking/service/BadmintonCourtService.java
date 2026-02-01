@@ -3,8 +3,7 @@ package com.badminton.booking.service;
 import com.badminton.booking.dto.request.BadmintonCourtCreateRequest;
 import com.badminton.booking.dto.request.BadmintonCourtUpdateRequest;
 import com.badminton.booking.dto.response.BadmintonCourtResponse;
-import org.springframework.data.domain.Page;
-
+import org.springframework.data.domain.Slice;
 
 
 public interface BadmintonCourtService {
@@ -12,7 +11,8 @@ public interface BadmintonCourtService {
 
     BadmintonCourtResponse createBadmintonCourt(BadmintonCourtCreateRequest request);
 
-    Page<BadmintonCourtResponse> getAllBadmintonCourts(int page, int size);
+    // Use Slice to avoid expensive COUNT query for faster pagination when total is not required
+    Slice<BadmintonCourtResponse> getAllBadmintonCourts(int page, int size);
 
     BadmintonCourtResponse getBadmintonCourtById(Integer id);
 

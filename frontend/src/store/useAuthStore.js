@@ -1,45 +1,62 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import axiosClient from '../axiosConfig/axiosConfig.js';
 
-const useAuthStore = create((set) => ({
-    user: null,
-    accessToken: null,
-    isLoading: false,
+const useAuthStore = create(
+    persist(
+        (set) => ({
+            user: null,
+            accessToken: null,
+            isLoading: false,
 
-    setAccessToken: (token) => set({ accessToken: token }),
+            setAccessToken: (token) => set({ accessToken: token }),
 
-    handleLogin: async (username, password) => {
-        set({ isLoading: true });
-        try {
-            const res = await axiosClient.post('/auth/login', { username, password });
+            setUser: (user) => set({ user }),
 
-            // Lưu ý: API của bạn trả về { accessToken, tokenType, ... }
-            set({
-                user: res.data.user,
-                accessToken: res.data.accessToken,
-                isLoading: false
-            });
-        } catch (err) {
-            set({ isLoading: false });
-            throw err; // Để component xử lý hiển thị lỗi
+            handleLogin: async (username, password) => {
+                set({ isLoading: true });
+                try {
+                    const res = await axiosClient.post('/auth/login', { username, password });
+
+                    // Backend trả về: { tokenType, accessToken, user }
+                    set({
+                        user: res.data.user, // { id, username, email, fullName, phoneNumber, role }
+                        accessToken: res.data.accessToken,
+                        isLoading: false
+                    });
+
+                    return res.data.user; // Trả về user để component biết role
+                } catch (err) {
+                    set({ isLoading: false });
+                    throw err;
+                }
+            },
+
+            handleRegister: async (registerData) => {
+                set({ isLoading: true });
+                try {
+                    const res = await axiosClient.post('/auth/register', registerData);
+                    set({ isLoading: false });
+                    return res.data;
+                } catch (err) {
+                    set({ isLoading: false });
+                    throw err;
+                }
+            },
+
+            logout: () => {
+                // Chỉ cần xóa state local
+                set({ user: null, accessToken: null });
+            }
+        }),
+        {
+            name: 'auth-storage', // Tên key trong localStorage
+            partialize: (state) => ({ 
+                user: state.user,
+                accessToken: state.accessToken 
+            }),
         }
-    },
-    handleRegister: async (registerData) => {
-        set({ isLoading: true });
-        try {
-            const res = await axiosClient.post('/auth/register', registerData);
-            set({ isLoading: false });
-            return res.data;
-        } catch (err) {
-            set({ isLoading: false });
-            throw err;
-        }
-    },
-
-    logout: () => {
-        set({ user: null, accessToken: null });
-        // Có thể điều hướng người dùng về trang login ở đây
-    }
-}));
+    )
+);
 
 export default useAuthStore;

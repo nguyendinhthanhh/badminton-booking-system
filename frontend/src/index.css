@@ -28,3 +28,39 @@
         @apply bg-background-light text-slate-900;
     }
 }
+
+
+/* Sparkline styles for dashboard */
+.sparkline-green {
+  background: linear-gradient(to top right, rgba(7, 136, 61, 0.1) 0%, rgba(7, 136, 61, 0) 50%);
+  border-bottom: 2px solid #07883d;
+}
+
+.sparkline-blue {
+  background: linear-gradient(to top right, rgba(36, 99, 235, 0.1) 0%, rgba(36, 99, 235, 0) 50%);
+  border-bottom: 2px solid #2463eb;
+}
+
+.sparkline-orange {
+  background: linear-gradient(to top right, rgba(231, 60, 8, 0.1) 0%, rgba(231, 60, 8, 0) 50%);
+  border-bottom: 2px solid #e73c08;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

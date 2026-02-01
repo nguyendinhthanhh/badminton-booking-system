@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -20,24 +21,23 @@ public class CustomUserDetailsService implements UserDetailsService {
     private UserRepository userRepository;
 
     @Override
-    // Load user details by username
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+        
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPasswordHash(),
                 getAuthority(user)
         );
     }
-    // Get authorities from user roles
+    
     private Collection<? extends GrantedAuthority> getAuthority(User user) {
-        // Kiểm tra nếu user hoặc role bị null để tránh NullPointerException
         if (user.getRole() == null) {
             return Collections.emptyList();
         }
-
-        // Trả về một danh sách chứa duy nhất 1 quyền
+        
         return Collections.singletonList(
                 new SimpleGrantedAuthority("ROLE_" + user.getRole().getRoleName())
         );

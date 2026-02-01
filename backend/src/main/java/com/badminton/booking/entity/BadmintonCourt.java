@@ -38,8 +38,6 @@ public class BadmintonCourt  {
     @Size(max = 255)
     @Column(name = "location", length = 255)
     private String location;
-
-    @Lob
     @Column(name = "description")
     private String description;
 

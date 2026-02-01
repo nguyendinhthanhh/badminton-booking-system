@@ -1,5 +1,6 @@
 package com.badminton.booking.entity;
 
+import com.badminton.booking.entity.enums.LockerStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -28,9 +29,9 @@ public class Locker {
     @Column(name = "size", length = 50)
     private String size;
 
-    @Size(max = 50)
     @Column(name = "status", length = 50)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private LockerStatus status;
 
     @Column(name = "rental_price", precision = 10, scale = 2)
     private BigDecimal rentalPrice;

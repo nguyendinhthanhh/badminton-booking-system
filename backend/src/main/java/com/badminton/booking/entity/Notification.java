@@ -1,5 +1,6 @@
 package com.badminton.booking.entity;
 
+import com.badminton.booking.entity.enums.NotificationType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -27,9 +28,9 @@ public class Notification {
     @Column(name = "message")
     private String message;
 
-    @Size(max = 50)
     @Column(name = "type", length = 50)
-    private String type;
+    @Enumerated(EnumType.STRING)
+    private NotificationType type;
 
     @ColumnDefault("false")
     @Column(name = "is_read")
