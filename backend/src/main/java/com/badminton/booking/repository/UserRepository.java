@@ -12,14 +12,24 @@ import java.util.List;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecificationExecutor<User> {
-    @Query("SELECT u FROM User u LEFT JOIN FETCH u.role WHERE u.username = :username")
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.role WHERE u.username = :username AND u.isActive = true")
     Optional<User> findByUsername(@Param("username") String username);
     
-    Optional<User> findByEmail(String email);
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.role WHERE u.username = :username")
+    Optional<User> findByUsernameIncludingInactive(@Param("username") String username);
 
-    Boolean existsByUsername(String username);
+    @Query("SELECT u FROM User u WHERE u.email = :email AND u.isActive = true")
+    Optional<User> findByEmail(@Param("email") String email);
 
-    Boolean existsByEmail(String email);
+    @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.username = :username AND u.isActive = true")
+    Boolean existsByUsername(@Param("username") String username);
 
-    List<User> findByRole_RoleName(String roleName);
+    @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.email = :email AND u.isActive = true")
+    Boolean existsByEmail(@Param("email") String email);
+
+    @Query("SELECT u FROM User u WHERE u.role.roleName = :roleName AND u.isActive = true")
+    List<User> findByRole_RoleName(@Param("roleName") String roleName);
+
+    @Query("SELECT u FROM User u WHERE u.id = :id AND u.isActive = true")
+    Optional<User> findByIdAndActiveTrue(@Param("id") Integer id);
 }

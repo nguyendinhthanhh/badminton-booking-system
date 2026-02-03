@@ -30,5 +30,7 @@ public interface UserService {
 
     void deleteUser(Integer id);
 
+    void reactivateUser(Integer id);
+
     boolean existsByUsername(String username);
 }

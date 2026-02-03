@@ -6,6 +6,7 @@ import com.badminton.booking.dto.user.UserProfileUpdateRequest;
 import com.badminton.booking.dto.user.UserResponse;
 import com.badminton.booking.dto.user.UserUpdateRequest;
 import com.badminton.booking.entity.enums.Gender;
+import com.badminton.booking.security.AuthService;
 import com.badminton.booking.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,10 +35,11 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final AuthService authService;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Create a new user", description = "Admin only")
+    @Operation(summary = "Create a new user", description = "Admin only - Creates user with default password 'password@123'")
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserCreateRequest request) {
         UserResponse response = userService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -153,12 +155,30 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Logout current user", description = "Invalidates all refresh tokens for the current user")
+    public ResponseEntity<String> logout() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        authService.logout(username);
+        return ResponseEntity.ok("Logged out successfully");
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Delete user", description = "Admin only")
+    @Operation(summary = "Delete user (soft delete)", description = "Admin only - Deactivates user by setting isActive to false")
     public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/reactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Reactivate deactivated user", description = "Admin only - Reactivates a previously deactivated user")
+    public ResponseEntity<String> reactivateUser(@PathVariable Integer id) {
+        userService.reactivateUser(id);
+        return ResponseEntity.ok("User reactivated successfully");
     }
 
     @GetMapping("/check-username")

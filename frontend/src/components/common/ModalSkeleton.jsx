@@ -1,10 +1,17 @@
-const ModalSkeleton = ({ type = 'detail' }) => {
+const ModalSkeleton = ({ type = 'detail', variant = 'user' }) => {
+  // Determine header color based on variant
+  const headerColor = variant === 'court' 
+    ? 'from-purple-600 to-purple-700' 
+    : variant === 'user' 
+    ? 'from-blue-600 to-blue-700'
+    : 'from-indigo-600 to-indigo-700';
+
   if (type === 'detail') {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl">
           {/* Header Skeleton */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5">
+          <div className={`bg-gradient-to-r ${headerColor} px-6 py-5`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-white/30 rounded-full"></div>
@@ -48,7 +55,7 @@ const ModalSkeleton = ({ type = 'detail' }) => {
     <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl">
         {/* Header Skeleton */}
-        <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-5">
+        <div className={`bg-gradient-to-r ${headerColor} px-6 py-5`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-white/30 rounded-lg"></div>

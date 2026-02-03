@@ -19,5 +19,4 @@ public class BadmintonCourtResponse {
     private String description;
     private String imageUrl;
     private Integer capacity;
-
 }

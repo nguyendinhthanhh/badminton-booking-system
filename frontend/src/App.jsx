@@ -7,6 +7,8 @@ import UserProfile from './pages/customer/UserProfile';
 import Dashboard from './pages/admin/Dashboard';
 import CourtManagement from './pages/admin/CourtManagement';
 import UserManagement from './pages/admin/UserManagement';
+import BookingSchedule from './pages/admin/BookingSchedule';
+import PriceRuleManagement from './pages/admin/PriceRuleManagement';
 import AuthPage from './pages/auth/AuthPage.jsx';
 import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
 import './App.css';
@@ -32,8 +34,10 @@ function App() {
           <Route element={<ProtectedRoute redirectPath="/login" />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
+              <Route path="bookings" element={<BookingSchedule />} />
               <Route path="courts" element={<CourtManagement />} />
               <Route path="users" element={<UserManagement />} />
+              <Route path="price-rules" element={<PriceRuleManagement />} />
             </Route>
           </Route>
 

@@ -61,6 +61,10 @@ public class User {
     @Column(name = "avatar", length = 500)
     private String avatar;
 
+    @ColumnDefault("true")
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
     private Role role;

@@ -41,7 +41,9 @@ public class UserServiceImpl implements UserService {
         }
 
         User user = userMapper.toEntity(request);
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        // Set default password for admin-created users
+        String defaultPassword = "password@123";
+        user.setPasswordHash(passwordEncoder.encode(defaultPassword));
         user.setCreatedAt(Instant.now());
 
         if (request.getRoleName() != null) {
@@ -57,7 +59,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponse getUserById(Integer id) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
         return userMapper.toResponse(user);
     }
@@ -159,10 +161,27 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteUser(Integer id) {
-        if (!userRepository.existsById(id)) {
-            throw new EntityNotFoundException("User not found with id: " + id);
+        User user = userRepository.findByIdAndActiveTrue(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+
+        // Soft delete - set isActive to false instead of deleting from database
+        user.setIsActive(false);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void reactivateUser(Integer id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+
+        if (user.getIsActive()) {
+            throw new IllegalStateException("User is already active");
         }
-        userRepository.deleteById(id);
+
+        // Reactivate user by setting isActive to true
+        user.setIsActive(true);
+        userRepository.save(user);
     }
 
     @Override

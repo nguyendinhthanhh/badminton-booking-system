@@ -5,6 +5,7 @@ import com.badminton.booking.dto.response.AuthResponse;
 import com.badminton.booking.dto.request.RegisterRequest;
 import com.badminton.booking.entity.Role;
 import com.badminton.booking.entity.User;
+import com.badminton.booking.repository.RefreshTokenRepo;
 import com.badminton.booking.repository.RoleRepository;
 import com.badminton.booking.repository.UserRepository;
 
@@ -26,6 +27,8 @@ public class AuthServiceImpl implements AuthService {
     private JwtService jwtService;
     @Autowired
     private RoleRepository roleRepository;
+    @Autowired
+    private RefreshTokenRepo refreshTokenRepo;
 
     public String register(RegisterRequest req) {
         if (userRepository.existsByUsername(req.getUsername())) {
@@ -55,16 +58,22 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        // First check if user exists and is active
+        User user = userRepository.findByUsernameIncludingInactive(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("Invalid username or password"));
+
+        // Check if user is active
+        if (!user.getIsActive()) {
+            throw new RuntimeException("Account is deactivated. Please contact administrator.");
+        }
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
 
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found after authentication"));
-
         String accessToken = jwtService.generateAccessToken(user);
 
-        // Tạo UserInfo để trả về
+
         AuthResponse.UserInfo userInfo = new AuthResponse.UserInfo(
                 user.getId().longValue(),
                 user.getUsername(),
@@ -80,5 +89,14 @@ public class AuthServiceImpl implements AuthService {
         response.setUser(userInfo);
 
         return response;
+    }
+
+    @Override
+    public void logout(String username) {
+        User user = userRepository.findByUsernameIncludingInactive(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        // Delete all refresh tokens for this user to invalidate sessions
+        refreshTokenRepo.deleteByUser(user);
     }
 }

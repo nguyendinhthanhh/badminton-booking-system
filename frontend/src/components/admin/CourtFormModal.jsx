@@ -87,38 +87,42 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
   const isEditMode = !!editData;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      <div 
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      ></div>
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex min-h-screen items-center justify-center p-4">
+        {/* Backdrop */}
+        <div 
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+          onClick={onClose}
+        ></div>
 
-      <div className="fixed inset-y-0 right-0 flex max-w-full pl-0 md:pl-10">
-        <div className="w-screen max-w-md transform transition-transform duration-300">
-          <div className="flex h-full flex-col overflow-y-scroll bg-white dark:bg-[#1a202c] shadow-2xl">
-            <div className="px-6 py-6 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-                    {isEditMode ? 'Edit Court' : 'Add New Court'}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    {isEditMode ? 'Update court information below.' : 'Fill in the information below to create a new badminton court.'}
-                  </p>
-                </div>
-                <button
-                  onClick={onClose}
-                  className="rounded-md text-slate-400 hover:text-slate-500 focus:outline-none"
-                >
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="flex-1 px-6 py-6 space-y-6">
+        {/* Modal */}
+        <div className="relative bg-white dark:bg-[#1a202c] rounded-xl shadow-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 overflow-hidden">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-start justify-between">
               <div>
-                <label className="block text-sm font-medium text-slate-900 dark:text-slate-200 mb-2">
-                  Court Name *
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  {isEditMode ? 'Chỉnh sửa sân' : 'Thêm sân mới'}
+                </h2>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {isEditMode ? 'Cập nhật thông tin sân bên dưới.' : 'Vui lòng điền đầy đủ thông tin bên dưới để khởi tạo sân cầu lông mới.'}
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-md text-slate-400 hover:text-slate-500 focus:outline-none"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <form onSubmit={handleSubmit} className="max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="px-6 py-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                  Tên sân *
                 </label>
                 <input
                   type="text"
@@ -126,21 +130,21 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  placeholder="e.g. VIP Court 1"
-                  className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2.5 text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-[#135bec] focus:border-transparent"
+                  placeholder="Nhập tên sân (vd: Court 10)"
+                  className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-900 dark:text-slate-200 mb-2">
-                    Court Type *
+                  <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                    Loại sân *
                   </label>
                   <select
                     name="type"
                     value={formData.type}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2.5 text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-[#135bec] focus:border-transparent"
+                    className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                   >
                     {courtTypes.map(type => (
                       <option key={type.value} value={type.value}>{type.label}</option>
@@ -149,25 +153,25 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-900 dark:text-slate-200 mb-2">
-                    Status *
+                  <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                    Sức chứa (người) *
                   </label>
-                  <select
-                    name="status"
-                    value={formData.status}
+                  <input
+                    type="number"
+                    name="capacity"
+                    value={formData.capacity}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2.5 text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-[#135bec] focus:border-transparent"
-                  >
-                    {courtStatuses.map(status => (
-                      <option key={status.value} value={status.value}>{status.label}</option>
-                    ))}
-                  </select>
+                    required
+                    min="2"
+                    max="10"
+                    className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-900 dark:text-slate-200 mb-2">
-                  Location *
+                <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                  Vị trí *
                 </label>
                 <input
                   type="text"
@@ -175,82 +179,99 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
                   value={formData.location}
                   onChange={handleChange}
                   required
-                  placeholder="e.g. West Wing, Ground Floor"
-                  className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2.5 text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-[#135bec] focus:border-transparent"
+                  placeholder="Tầng, khu vực..."
+                  className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-900 dark:text-slate-200 mb-2">
-                  Capacity (Players) *
-                </label>
-                <input
-                  type="number"
-                  name="capacity"
-                  value={formData.capacity}
-                  onChange={handleChange}
-                  required
-                  min="2"
-                  max="10"
-                  className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2.5 text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-[#135bec] focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-900 dark:text-slate-200 mb-2">
-                  Image URL
-                </label>
-                <input
-                  type="url"
-                  name="imageUrl"
-                  value={formData.imageUrl}
-                  onChange={handleChange}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2.5 text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-[#135bec] focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-900 dark:text-slate-200 mb-2">
-                  Description
+                <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                  Mô tả chi tiết
                 </label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
-                  rows="4"
-                  placeholder="Describe the court features..."
-                  className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2.5 text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-[#135bec] focus:border-transparent resize-none"
+                  rows="3"
+                  placeholder="Thông tin bổ sung về sân, thiết bị..."
+                  className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent resize-none"
                 ></textarea>
               </div>
-            </form>
 
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <div>
+                <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                  Ảnh sân
+                </label>
+                <div className="space-y-2">
+                  <input
+                    type="url"
+                    name="imageUrl"
+                    value={formData.imageUrl}
+                    onChange={handleChange}
+                    placeholder="Tải ảnh lên hoặc kéo thả vào đây"
+                    className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    PNG, JPG, GIF lên đến 10MB
+                  </p>
+                  {formData.imageUrl && (
+                    <div className="mt-2 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                      <img 
+                        src={formData.imageUrl} 
+                        alt="Preview" 
+                        className="w-full h-40 object-cover"
+                        onError={(e) => {
+                          e.target.src = 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                  Trạng thái *
+                </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                >
+                  {courtStatuses.map(status => (
+                    <option key={status.value} value={status.value}>{status.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="px-4 py-2 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium text-sm disabled:opacity-50"
+                className="px-3 py-1.5 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium text-sm disabled:opacity-50"
               >
-                Cancel
+                Hủy
               </button>
               <button
                 type="submit"
-                onClick={handleSubmit}
                 disabled={loading}
-                className="px-4 py-2 rounded-md bg-[#135bec] hover:bg-blue-600 text-white font-semibold text-sm disabled:opacity-50 flex items-center gap-2"
+                className="px-3 py-1.5 rounded-md bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm disabled:opacity-50 flex items-center gap-2"
               >
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    {isEditMode ? 'Updating...' : 'Creating...'}
+                    {isEditMode ? 'Đang cập nhật...' : 'Đang tạo...'}
                   </>
                 ) : (
-                  <>{isEditMode ? 'Update Court' : 'Save Court'}</>
+                  <>{isEditMode ? 'Cập nhật sân' : 'Lưu sân'}</>
                 )}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>

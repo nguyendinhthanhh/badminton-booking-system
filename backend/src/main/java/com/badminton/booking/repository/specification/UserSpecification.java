@@ -103,6 +103,9 @@ public class UserSpecification {
                 ));
             }
 
+            // Always filter to show only active users
+            predicates.add(criteriaBuilder.equal(root.get("isActive"), true));
+
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }

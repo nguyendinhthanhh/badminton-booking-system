@@ -1,5 +1,5 @@
-const CourtDetailModal = ({ isOpen, onClose, court }) => {
-  if (!isOpen || !court) return null;
+const CourtDetailModal = ({ isOpen, onClose, court, loading = false }) => {
+  if (!isOpen) return null;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -54,98 +54,124 @@ const CourtDetailModal = ({ isOpen, onClose, court }) => {
 
           {/* Content */}
           <div className="p-6 space-y-6">
-            {/* Image */}
-            {court.imageUrl && (
-              <div className="aspect-video rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
-                <img 
-                  src={court.imageUrl} 
-                  alt={court.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800';
-                  }}
-                />
-              </div>
-            )}
+            {loading ? (
+              <>
+                {/* Image Skeleton */}
+                <div className="aspect-video rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
 
-            {/* Info Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Court ID
-                </label>
-                <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
-                  #{court.id}
-                </p>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Status
-                </label>
-                <div className="mt-1">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(court.status)}`}>
-                    {court.status}
-                  </span>
+                {/* Info Grid Skeleton */}
+                <div className="grid grid-cols-2 gap-4">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="h-3 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                      <div className="h-5 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    </div>
+                  ))}
                 </div>
-              </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Court Name
-                </label>
-                <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
-                  {court.name}
-                </p>
-              </div>
+                {/* Description Skeleton */}
+                <div className="space-y-2">
+                  <div className="h-3 w-28 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="h-4 w-2/3 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                  </div>
+                </div>
+              </>
+            ) : court ? (
+              <>
+                {/* Image - Always show */}
+                <div className="aspect-video rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
+                  <img 
+                    src={court.imageUrl || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800'} 
+                    alt={court.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800';
+                    }}
+                  />
+                </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Type
-                </label>
-                <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
-                  {getTypeLabel(court.type)}
-                </p>
-              </div>
+                {/* Info Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Court ID
+                    </label>
+                    <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
+                      #{court.id}
+                    </p>
+                  </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Capacity
-                </label>
-                <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[18px]">group</span>
-                  {court.capacity} Players
-                </p>
-              </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Status
+                    </label>
+                    <div className="mt-1">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(court.status)}`}>
+                        {court.status}
+                      </span>
+                    </div>
+                  </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Location
-                </label>
-                <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
-                  {court.location}
-                </p>
-              </div>
-            </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Court Name
+                    </label>
+                    <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
+                      {court.name}
+                    </p>
+                  </div>
 
-            {/* Description */}
-            {court.description && (
-              <div>
-                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Description
-                </label>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                  {court.description}
-                </p>
-              </div>
-            )}
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Type
+                    </label>
+                    <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
+                      {getTypeLabel(court.type)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Capacity
+                    </label>
+                    <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[18px]">group</span>
+                      {court.capacity} Players
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Location
+                    </label>
+                    <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
+                      {court.location}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Description
+                  </label>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {court.description || 'No description available'}
+                  </p>
+                </div>
+              </>
+            ) : null}
           </div>
 
           {/* Footer */}
           <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 flex justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium text-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
+              disabled={loading}
+              className="px-4 py-2 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium text-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors disabled:opacity-50"
             >
               Close
             </button>

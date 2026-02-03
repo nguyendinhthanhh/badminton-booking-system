@@ -9,8 +9,9 @@ const AdminSidebar = () => {
   const menuItems = [
     { path: '/admin', icon: 'dashboard', label: 'Dashboard', exact: true },
     { path: '/admin/courts', icon: 'stadium', label: 'Quản lý sân' },
+    { path: '/admin/price-rules', icon: 'sell', label: 'Giá sân' },
     { path: '/admin/users', icon: 'group', label: 'Người dùng' },
-    { path: '/admin/bookings', icon: 'calendar_month', label: 'Đặt sân' },
+    { path: '/admin/bookings', icon: 'event_available', label: 'Đặt sân' },
     { path: '/admin/payments', icon: 'payments', label: 'Thanh toán' },
     { path: '/admin/reports', icon: 'analytics', label: 'Báo cáo' },
     { path: '/admin/settings', icon: 'settings', label: 'Cài đặt' }

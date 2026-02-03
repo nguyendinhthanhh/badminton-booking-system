@@ -35,6 +35,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         // Cho phép truy cập công khai cho guest users
                         .requestMatchers("/api/courts/all", "/api/courts/findById/**").permitAll()
+                        // Cho phép xem giá sân và khung giờ công khai
+                        .requestMatchers("/api/time-slots", "/api/time-slots/active", "/api/time-slots/{id}").permitAll()
+                        .requestMatchers("/api/pricing/**").permitAll()
                         // Cho phép kiểm tra username tồn tại
                         .requestMatchers("/api/users/check-username").permitAll()
                         // Cho phép forgot password và reset password
@@ -46,6 +49,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/api-docs/**"
                         ).permitAll()
+                        // API lịch đặt sân - yêu cầu xác thực
+                        .requestMatchers("/api/schedule/admin/**").authenticated()
                         // API quản lý người dùng - yêu cầu xác thực
                         .requestMatchers("/api/users/**").authenticated()
                         .anyRequest().authenticated()
@@ -77,7 +82,6 @@ public class SecurityConfig {
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
-        configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

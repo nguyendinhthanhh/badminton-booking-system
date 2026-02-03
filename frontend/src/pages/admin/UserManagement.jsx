@@ -36,8 +36,14 @@ const UserManagement = () => {
   const [loadingUser, setLoadingUser] = useState(false);
   const [loadingModalType, setLoadingModalType] = useState(null); // 'detail' or 'form'
   const [isUsingCache, setIsUsingCache] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   
-  const [filters, setFilters] = useState(cachedUsers.filters);
+  const [filters, setFilters] = useState(cachedUsers.filters || {
+    keyword: '',
+    roleName: '',
+    sortBy: 'createdAt',
+    sortDir: 'desc'
+  });
 
   // Real stats from API
   const [stats, setStats] = useState(
@@ -136,29 +142,23 @@ const UserManagement = () => {
   };
 
   const handleViewDetail = async (userId) => {
+    setIsDetailModalOpen(true);
     setLoadingUser(true);
-    
-    // Only show skeleton if API takes longer than 300ms
-    const skeletonTimer = setTimeout(() => {
-      setLoadingModalType('detail');
-    }, 300);
+    setSelectedUser(null);
     
     try {
       const user = await userService.getUserById(userId);
-      clearTimeout(skeletonTimer);
-      setLoadingModalType(null);
       setSelectedUser(user);
-      setIsDetailModalOpen(true);
     } catch (error) {
-      clearTimeout(skeletonTimer);
-      setLoadingModalType(null);
       showToast('Lỗi khi tải thông tin người dùng', 'error');
+      setIsDetailModalOpen(false);
     } finally {
       setLoadingUser(false);
     }
   };
 
   const handleEdit = async (userId) => {
+    setIsCreating(false);
     setLoadingUser(true);
     
     // Only show skeleton if API takes longer than 300ms
@@ -209,16 +209,28 @@ const UserManagement = () => {
 
   const handleFormSubmit = async (userData) => {
     try {
-      await userService.updateUser(selectedUser.id, userData);
-      showToast('Cập nhật người dùng thành công', 'success');
+      if (isCreating) {
+        await userService.createUser(userData);
+        showToast('Thêm người dùng thành công', 'success');
+      } else {
+        await userService.updateUser(selectedUser.id, userData);
+        showToast('Cập nhật người dùng thành công', 'success');
+      }
       setIsFormModalOpen(false);
       setSelectedUser(null);
+      setIsCreating(false);
       invalidateUsers(); // Invalidate cache
       await fetchUsers();
       await fetchStats();
     } catch (error) {
-      showToast('Lỗi khi cập nhật người dùng', 'error');
+      showToast(isCreating ? 'Lỗi khi thêm người dùng' : 'Lỗi khi cập nhật người dùng', 'error');
     }
+  };
+
+  const handleAddUser = () => {
+    setIsCreating(true);
+    setSelectedUser(null);
+    setIsFormModalOpen(true);
   };
 
   const getRoleBadge = (role) => {
@@ -269,7 +281,10 @@ const UserManagement = () => {
               <span className="material-symbols-outlined text-lg">download</span>
               Xuất Excel
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors shadow-md shadow-purple-600/20">
+            <button 
+              onClick={handleAddUser}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors shadow-md shadow-purple-600/20"
+            >
               <span className="material-symbols-outlined text-lg">add</span>
               Thêm người dùng
             </button>
@@ -559,18 +574,15 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Modal Skeleton Loading */}
-      {loadingUser && loadingModalType && (
-        <ModalSkeleton type={loadingModalType} />
-      )}
-
       {/* Modals */}
       {isFormModalOpen && (
         <UserFormModal
           user={selectedUser}
+          isCreate={isCreating}
           onClose={() => {
             setIsFormModalOpen(false);
             setSelectedUser(null);
+            setIsCreating(false);
           }}
           onSubmit={handleFormSubmit}
         />
@@ -579,6 +591,8 @@ const UserManagement = () => {
       {isDetailModalOpen && (
         <UserDetailModal
           user={selectedUser}
+          loading={loadingUser}
+          isOpen={isDetailModalOpen}
           onClose={() => {
             setIsDetailModalOpen(false);
             setSelectedUser(null);
