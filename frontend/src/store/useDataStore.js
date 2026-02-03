@@ -1,118 +1,78 @@
 import { create } from 'zustand';
 
-const useDataStore = create((set, get) => ({
-  // User Management Cache
-  users: {
-    data: null,
-    stats: null,
-    lastFetch: null,
-    filters: {
-      keyword: '',
-      roleName: '',
-      sortBy: 'id',
-      sortDir: 'asc'
-    },
-    page: 0
-  },
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-  // Court Management Cache
+const useDataStore = create((set, get) => ({
+  // Courts data
   courts: {
     data: null,
     lastFetch: null,
-    searchTerm: '',
+    searchTerm: ''
   },
 
-  // Cache expiry time (5 minutes)
-  CACHE_DURATION: 5 * 60 * 1000,
+  // Users data
+  users: {
+    data: null,
+    lastFetch: null,
+    searchTerm: ''
+  },
 
-  // Check if cache is valid
+  // Cache validation
   isCacheValid: (lastFetch) => {
     if (!lastFetch) return false;
-    const now = Date.now();
-    return (now - lastFetch) < get().CACHE_DURATION;
+    return Date.now() - lastFetch < CACHE_DURATION;
   },
 
-  // User Management Actions
-  setUsers: (data, stats = null) => set((state) => ({
-    users: {
-      ...state.users,
-      data,
-      stats: stats || state.users.stats,
-      lastFetch: Date.now()
-    }
-  })),
-
-  setUserStats: (stats) => set((state) => ({
-    users: {
-      ...state.users,
-      stats,
-      lastFetch: Date.now()
-    }
-  })),
-
-  setUserFilters: (filters) => set((state) => ({
-    users: {
-      ...state.users,
-      filters: { ...state.users.filters, ...filters }
-    }
-  })),
-
-  setUserPage: (page) => set((state) => ({
-    users: {
-      ...state.users,
-      page
-    }
-  })),
-
-  invalidateUsers: () => set((state) => ({
-    users: {
-      ...state.users,
-      lastFetch: null
-    }
-  })),
-
-  // Court Management Actions
-  setCourts: (data) => set((state) => ({
+  // Courts actions
+  setCourts: (data) => set({
     courts: {
-      ...state.courts,
+      ...get().courts,
       data,
       lastFetch: Date.now()
     }
-  })),
+  }),
 
-  setCourtSearchTerm: (searchTerm) => set((state) => ({
+  setCourtSearchTerm: (searchTerm) => set({
     courts: {
-      ...state.courts,
+      ...get().courts,
       searchTerm
     }
-  })),
+  }),
 
-  invalidateCourts: () => set((state) => ({
+  invalidateCourts: () => set({
     courts: {
-      ...state.courts,
+      ...get().courts,
       lastFetch: null
     }
-  })),
+  }),
+
+  // Users actions
+  setUsers: (data) => set({
+    users: {
+      ...get().users,
+      data,
+      lastFetch: Date.now()
+    }
+  }),
+
+  setUserSearchTerm: (searchTerm) => set({
+    users: {
+      ...get().users,
+      searchTerm
+    }
+  }),
+
+  invalidateUsers: () => set({
+    users: {
+      ...get().users,
+      lastFetch: null
+    }
+  }),
 
   // Clear all cache
   clearCache: () => set({
-    users: {
-      data: null,
-      stats: null,
-      lastFetch: null,
-      filters: {
-        keyword: '',
-        roleName: '',
-        sortBy: 'id',
-        sortDir: 'asc'
-      },
-      page: 0
-    },
-    courts: {
-      data: null,
-      lastFetch: null,
-      searchTerm: '',
-    }
+    courts: { data: null, lastFetch: null, searchTerm: '' },
+    users: { data: null, lastFetch: null, searchTerm: '' }
   })
 }));
 

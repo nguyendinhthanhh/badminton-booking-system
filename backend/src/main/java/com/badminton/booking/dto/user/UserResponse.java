@@ -25,4 +25,5 @@ public class UserResponse {
     private String avatar;
     private String roleName;
     private Instant createdAt;
+    private Boolean isActive;
 }

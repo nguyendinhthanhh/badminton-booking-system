@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
+import userService from '../../services/userService';
 
 const AdminHeader = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const location = useLocation();
-  const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const { user, logout: logoutStore } = useAuthStore();
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -46,6 +48,20 @@ const AdminHeader = () => {
       color: 'text-red-600 bg-red-50'
     }
   ];
+
+  const handleLogout = async () => {
+    // Logout immediately for better UX
+    logoutStore();
+    navigate('/login');
+    
+    // Call API in background (don't wait)
+    try {
+      await userService.logout();
+    } catch (error) {
+      console.error('Logout API error:', error);
+      // Already logged out locally, so ignore API errors
+    }
+  };
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 z-10">
@@ -168,7 +184,10 @@ const AdminHeader = () => {
                   </button>
                 </div>
                 <div className="border-t border-gray-200 py-2">
-                  <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3">
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                  >
                     <span className="material-symbols-outlined text-xl">logout</span>
                     <span>Đăng xuất</span>
                   </button>

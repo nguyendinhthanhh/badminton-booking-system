@@ -43,16 +43,13 @@ const AuthPage = () => {
         try {
             if (authMode === "login") {
                 const user = await handleLogin(formData.username, formData.password);
-                setSuccess("Đăng nhập thành công!");
                 
-                // Redirect dựa trên role
-                setTimeout(() => {
-                    if (user.role === 'ADMIN') {
-                        navigate('/admin');
-                    } else {
-                        navigate('/');
-                    }
-                }, 1000);
+                // Navigate immediately based on role
+                if (user.role === 'ADMIN') {
+                    navigate('/admin');
+                } else {
+                    navigate('/');
+                }
             } else {
                 if (formData.password !== formData.confirmPassword) {
                     setError("Mật khẩu xác nhận không khớp!");

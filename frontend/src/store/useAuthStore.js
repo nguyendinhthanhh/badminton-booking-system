@@ -16,7 +16,14 @@ const useAuthStore = create(
             handleLogin: async (username, password) => {
                 set({ isLoading: true });
                 try {
-                    const res = await axiosClient.post('/auth/login', { username, password });
+                    console.log('Login request:', { username, password });
+                    
+                    const res = await axiosClient.post('/auth/login', 
+                        { username, password }
+                    );
+                    
+                    console.log('Login response:', res);
+                    console.log('Response data:', res.data);
 
                     // Backend trả về: { tokenType, accessToken, user }
                     set({
@@ -27,6 +34,9 @@ const useAuthStore = create(
 
                     return res.data.user; // Trả về user để component biết role
                 } catch (err) {
+                    console.error('Login error:', err);
+                    console.error('Error response:', err.response?.data);
+                    console.error('Error status:', err.response?.status);
                     set({ isLoading: false });
                     throw err;
                 }

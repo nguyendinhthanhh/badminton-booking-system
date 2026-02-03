@@ -41,6 +41,16 @@ const userService = {
     }
   },
 
+  createUser: async (userData) => {
+    try {
+      const response = await axiosInstance.post('/users', userData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
+  },
+
   updateUser: async (id, userData) => {
     try {
       const response = await axiosInstance.put(`/users/${id}`, userData);
@@ -67,6 +77,16 @@ const userService = {
       return response.data;
     } catch (error) {
       console.error('Error deleting user:', error);
+      throw error;
+    }
+  },
+
+  logout: async () => {
+    try {
+      const response = await axiosInstance.post('/users/logout');
+      return response.data;
+    } catch (error) {
+      console.error('Error logging out:', error);
       throw error;
     }
   }

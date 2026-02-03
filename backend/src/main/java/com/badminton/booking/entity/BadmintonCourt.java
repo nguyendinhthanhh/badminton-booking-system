@@ -33,11 +33,13 @@ public class BadmintonCourt  {
 
 
     @Column(name = "type", length = 50)
+    @Enumerated(EnumType.STRING)
     private CourtType type;
 
     @Size(max = 255)
     @Column(name = "location", length = 255)
     private String location;
+
     @Column(name = "description")
     private String description;
 
@@ -57,7 +59,17 @@ public class BadmintonCourt  {
     @OneToMany(mappedBy = "court")
     private Set<Booking> bookings = new LinkedHashSet<>();
 
-    @OneToMany(mappedBy = "court")
-    private Set<PriceRule> priceRules = new LinkedHashSet<>();
+    @OneToMany(mappedBy = "court", cascade = CascadeType.ALL)
+    private Set<CourtPrice> courtPrices = new LinkedHashSet<>();
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

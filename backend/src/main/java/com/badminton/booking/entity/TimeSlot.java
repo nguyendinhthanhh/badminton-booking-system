@@ -20,18 +20,15 @@ public class TimeSlot  {
     @Column(name = "slot_id", nullable = false)
     private Integer id;
 
-    @Column(name = "end_time")
+    @Column(name = "start_time", nullable = false)
+    private LocalTime startTime;
+
+    @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
     @Size(max = 100)
     @Column(name = "period_name", length = 100)
-    private String periodName;
-
-    @Column(name = "start_time")
-    private LocalTime startTime;
-
-    @Column(name = "day_of_week")
-    private Integer dayOfWeek;
+    private String periodName; // "Sáng sớm", "Sáng", "Trưa", "Chiều", "Tối", "Giờ vàng"
 
     @Column(name = "is_active")
     private Boolean isActive;
@@ -39,7 +36,10 @@ public class TimeSlot  {
     @OneToMany(mappedBy = "slot")
     private Set<BookingDetail> bookingDetails = new LinkedHashSet<>();
 
-    @OneToMany(mappedBy = "slot")
-    private Set<PriceRule> priceRules = new LinkedHashSet<>();
-
+    @PrePersist
+    protected void onCreate() {
+        if (isActive == null) {
+            isActive = true;
+        }
+    }
 }

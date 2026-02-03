@@ -21,10 +21,6 @@ public class UserCreateRequest {
     @Size(min = 3, max = 100, message = "Username must be between 3 and 100 characters")
     private String username;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
-    private String password;
-
     @NotBlank(message = "Full name is required")
     @Size(max = 150, message = "Full name must be at most 150 characters")
     private String fullName;
@@ -42,4 +38,3 @@ public class UserCreateRequest {
 
     private String roleName;
 }
-
