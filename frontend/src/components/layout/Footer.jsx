@@ -1,77 +1,49 @@
+import { Link } from 'react-router-dom';
+
 const Footer = () => {
   return (
-    <footer className="bg-[#102215] text-white pt-16 pb-8 border-t border-white/10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
-          {/* Brand */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-[#13ec49]">
-              <span className="material-symbols-outlined text-3xl">sports_tennis</span>
-              <span className="text-2xl font-bold text-white tracking-tight">BadmintonPro</span>
-            </div>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              The ultimate destination for badminton enthusiasts. Premium courts, professional coaching, and a vibrant community.
+    <footer className="bg-white pt-20 pb-10 border-t border-gray-100">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
+          {/* Brand & Description */}
+          <div className="md:col-span-5 space-y-6">
+            <Link to="/" className="flex items-center gap-2">
+              <span className="text-2xl font-black text-blue-600 tracking-tight">BadmintonBooking</span>
+            </Link>
+            <p className="text-sm font-bold text-gray-500 leading-relaxed max-w-sm">
+              Nền tảng đặt sân cầu lông hàng đầu tại Việt Nam. Mang lại trải nghiệm chơi thể thao chuyên nghiệp và tiện lợi nhất cho mọi người.
             </p>
           </div>
 
           {/* Quick Links */}
-          <div>
-            <h3 className="font-bold text-lg mb-4">Quick Links</h3>
-            <ul className="space-y-3">
-              <li><a href="#" className="text-gray-400 hover:text-[#13ec49] transition-colors text-sm">About Us</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-[#13ec49] transition-colors text-sm">Our Courts</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-[#13ec49] transition-colors text-sm">Coaching</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-[#13ec49] transition-colors text-sm">Memberships</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-[#13ec49] transition-colors text-sm">Tournaments</a></li>
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h3 className="font-bold text-lg mb-4">Contact Us</h3>
+          <div className="md:col-span-3">
+            <h3 className="text-base font-black text-gray-900 mb-6 uppercase tracking-wider">Liên kết</h3>
             <ul className="space-y-4">
-              <li className="flex items-start gap-3 text-sm text-gray-400">
-                <span className="material-symbols-outlined text-[#13ec49] mt-0.5">location_on</span>
-                <span>123 Sports Lane,<br/>Badminton City, BC 54321</span>
-              </li>
-              <li className="flex items-center gap-3 text-sm text-gray-400">
-                <span className="material-symbols-outlined text-[#13ec49]">call</span>
-                <span>+1 (234) 567-890</span>
-              </li>
-              <li className="flex items-center gap-3 text-sm text-gray-400">
-                <span className="material-symbols-outlined text-[#13ec49]">mail</span>
-                <span>hello@badmintonpro.com</span>
-              </li>
+              <li><Link to="/about" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors">Về chúng tôi</Link></li>
+              <li><Link to="/support" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors">Trung tâm hỗ trợ</Link></li>
+              <li><Link to="/privacy" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors">Chính sách bảo mật</Link></li>
             </ul>
           </div>
 
-          {/* Newsletter */}
-          <div>
-            <h3 className="font-bold text-lg mb-4">Stay Updated</h3>
-            <p className="text-gray-400 text-sm mb-4">Subscribe to our newsletter for the latest updates and offers.</p>
-            <div className="flex gap-2">
-              <input 
-                type="email" 
-                placeholder="Enter your email" 
-                className="flex-1 h-10 px-3 rounded bg-white/10 border border-white/10 text-white placeholder:text-gray-500 text-sm focus:outline-none focus:ring-1 focus:ring-[#13ec49]"
-              />
-              <button className="h-10 px-3 bg-[#13ec49] hover:bg-[#0fb839] text-[#0d1b11] font-bold rounded transition-colors">
-                <span className="material-symbols-outlined text-xl">send</span>
+          {/* Social Track */}
+          <div className="md:col-span-4">
+            <h3 className="text-base font-black text-gray-900 mb-6 uppercase tracking-wider">Theo dõi</h3>
+            <div className="flex gap-4">
+              <button className="size-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all">
+                <span className="material-symbols-outlined text-[20px]">share</span>
+              </button>
+              <button className="size-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all">
+                <span className="material-symbols-outlined text-[20px]">thumb_up</span>
               </button>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-500 text-sm">© 2024 BadmintonPro. All rights reserved.</p>
-          <div className="flex gap-6">
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
-              <span className="sr-only">Facebook</span>
-              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
-            </a>
-          </div>
+        {/* Bottom Bar */}
+        <div className="pt-8 border-t border-gray-50 text-center">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            © 2024 BadmintonBooking. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

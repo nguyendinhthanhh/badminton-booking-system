@@ -53,7 +53,15 @@ const userService = {
 
   updateUser: async (id, userData) => {
     try {
+      console.log('=== UPDATE USER REQUEST ===');
+      console.log('User ID:', id);
+      console.log('Update Data:', userData);
+      
       const response = await axiosInstance.put(`/users/${id}`, userData);
+      
+      console.log('=== UPDATE USER RESPONSE ===');
+      console.log('Response:', response.data);
+      
       return response.data;
     } catch (error) {
       console.error('Error updating user:', error);

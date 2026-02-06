@@ -101,6 +101,11 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
 
+        System.out.println("=== UPDATE USER DEBUG ===");
+        System.out.println("User ID: " + id);
+        System.out.println("Current Gender: " + user.getGender());
+        System.out.println("Request Gender: " + request.getGender());
+
         if (request.getFullName() != null) {
             user.setFullName(request.getFullName());
         }
@@ -112,6 +117,7 @@ public class UserServiceImpl implements UserService {
         }
         if (request.getGender() != null) {
             user.setGender(request.getGender());
+            System.out.println("Gender updated to: " + user.getGender());
         }
         if (request.getDateOfBirth() != null) {
             user.setDateOfBirth(request.getDateOfBirth());
@@ -126,6 +132,9 @@ public class UserServiceImpl implements UserService {
         }
 
         User updatedUser = userRepository.save(user);
+        System.out.println("Saved Gender: " + updatedUser.getGender());
+        System.out.println("=== END DEBUG ===");
+        
         return userMapper.toResponse(updatedUser);
     }
 

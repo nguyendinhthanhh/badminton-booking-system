@@ -120,6 +120,13 @@ public class CourtPriceServiceImpl implements CourtPriceService {
     }
 
     @Override
+    public List<CourtPriceResponse> getAllPrices() {
+        return courtPriceRepository.findAll().stream()
+                .map(courtPriceMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public BigDecimal getPriceForTime(Integer courtId, LocalDate date, LocalTime time) {
         DayType dayType = getDayType(date);
 

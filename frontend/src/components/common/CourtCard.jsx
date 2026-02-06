@@ -1,71 +1,139 @@
-import { Link } from 'react-router-dom';
-
-const CourtCard = ({ court }) => {
-  const { id, name, type, image, status, capacity, features, price, location } = court;
+const CourtCard = ({ court, onViewDetails, onBookNow }) => {
+  const defaultCourtImage = 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800';
   
-  const isAvailable = status === 'available';
-  // Type color based on court type
-  const typeColor = type === 'Singles' ? 'text-orange-500' : 'text-[#13ec49]';
-  const typeLabel = type === 'Singles' ? 'Singles' : 'Doubles';
+  const courtId = court.id;
+  const courtName = court.name;
+  const isAvailable = court.status === 'ACTIVE' && court.isAvailableToday;
+  const courtType = court.type === 'SINGLE' ? 'Sân đơn' : court.type === 'DOUBLE' ? 'Sân đôi' : 'Sân VIP';
+  const typeColor = court.type === 'SINGLE' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 
+                   court.type === 'DOUBLE' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
+                   'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('vi-VN').format(price) + 'đ';
+  };
 
   return (
-    <div className="group bg-white dark:bg-[#1a2e21] rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 dark:border-gray-800">
-      <div className="relative h-48 overflow-hidden">
-        <div className={`absolute top-3 right-3 z-10 px-2 py-1 ${isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} text-xs font-bold rounded flex items-center gap-1`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${isAvailable ? 'bg-green-600 animate-pulse' : 'bg-red-600'}`}></span>
-          {isAvailable ? 'Available' : 'Occupied'}
+    <div className="group bg-white dark:bg-surface-dark rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:border-primary/30">
+      {/* Image */}
+      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
+        <img
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          src={court.imageUrl || defaultCourtImage}
+          alt={courtName}
+          onError={(e) => {
+            e.target.src = defaultCourtImage;
+          }}
+        />
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+        
+        {/* Status Badge */}
+        <div className={`absolute top-3 left-3 ${isAvailable ? 'bg-green-500' : 'bg-red-500'} text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5`}>
+          <span className={`w-1.5 h-1.5 rounded-full bg-white ${isAvailable ? 'animate-pulse' : ''}`}></span>
+          {isAvailable ? 'Còn trống' : 'Hết sân'}
         </div>
-        <div 
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-          style={{ backgroundImage: `url(${image})` }}
-        ></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
+
+        {/* Court Type Badge */}
+        <div className={`absolute top-3 right-3 ${typeColor} text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm`}>
+          {courtType}
+        </div>
+
+        {/* Favorite */}
+        <button className="absolute bottom-3 right-3 size-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-white transition-all shadow-lg">
+          <span className="material-symbols-outlined text-[20px]">favorite_border</span>
+        </button>
       </div>
 
+      {/* Content */}
       <div className="p-5">
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <span className={`text-xs font-semibold ${typeColor} uppercase tracking-wide`}>{typeLabel}</span>
-            <h3 className="text-lg font-bold text-[#0d1b11] dark:text-white">{name}</h3>
+        {/* Title & Location */}
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-[#111318] dark:text-white mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+            {courtName}
+          </h3>
+          <div className="flex items-center gap-1.5 text-[#616e89] dark:text-gray-400 text-sm">
+            <span className="material-symbols-outlined text-[16px]">location_on</span>
+            <span className="line-clamp-1">{court.location || 'Chưa cập nhật'}</span>
           </div>
         </div>
 
-        {location && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">location_on</span>
-            {location}
+        {/* Description */}
+        {court.description && (
+          <p className="text-sm text-[#616e89] dark:text-gray-400 mb-4 line-clamp-2">
+            {court.description}
           </p>
         )}
 
-        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
-          <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[18px]">group</span>
-            <span>{capacity}</span>
+        {/* Info Grid */}
+        <div className="grid grid-cols-2 gap-3 mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+          {/* Capacity */}
+          <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5">
+            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[18px] text-primary">groups</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-[#616e89] dark:text-gray-400 uppercase font-medium">Sức chứa</span>
+              <span className="text-sm font-bold text-[#111318] dark:text-white">{court.capacity || 4} người</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[18px]">{features.icon}</span>
-            <span>{features.label}</span>
+
+          {/* Operating Hours */}
+          <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5">
+            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[18px] text-primary">schedule</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-[#616e89] dark:text-gray-400 uppercase font-medium">Giờ mở cửa</span>
+              <span className="text-sm font-bold text-[#111318] dark:text-white">{court.openTime}-{court.closeTime}</span>
+            </div>
           </div>
         </div>
 
-        <div className="pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Price per hour</p>
-            <p className="text-xl font-bold text-[#0d1b11] dark:text-white">${price.toFixed(2)}</p>
-          </div>
-          {isAvailable ? (
-            <Link 
-              to={`/courts/${id}`}
-              className="h-9 px-4 rounded-lg border-2 border-[#13ec49] text-[#13ec49] hover:bg-[#13ec49] hover:text-[#0d1b11] font-bold text-sm transition-colors"
-            >
-              View Detail
-            </Link>
+        {/* Price Section */}
+        <div className="mb-4">
+          <p className="text-[10px] text-[#616e89] dark:text-gray-400 uppercase font-medium mb-1.5">Giá thuê</p>
+          {court.minPricePerHour && court.maxPricePerHour ? (
+            <div className="flex items-baseline gap-2">
+              <p className="text-primary font-bold text-xl">
+                {formatPrice(court.minPricePerHour)}
+              </p>
+              <span className="text-[#616e89] dark:text-gray-400 text-sm">-</span>
+              <p className="text-primary font-bold text-xl">
+                {formatPrice(court.maxPricePerHour)}
+              </p>
+              <span className="text-sm text-[#616e89] dark:text-gray-400 font-normal">/giờ</span>
+            </div>
           ) : (
-            <button 
-              disabled
-              className="h-9 px-4 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed font-bold text-sm"
+            <p className="text-[#616e89] dark:text-gray-400 text-sm italic">
+              Liên hệ để biết giá
+            </p>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => onViewDetails(courtId)}
+            className="flex-[0.8] h-11 rounded-xl border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center gap-1.5 text-[#111318] dark:text-white hover:border-primary hover:bg-primary/5 transition-all text-sm font-semibold"
+          >
+            <span className="material-symbols-outlined text-[18px]">visibility</span>
+            <span>Chi tiết</span>
+          </button>
+          {isAvailable ? (
+            <button
+              onClick={() => onBookNow(courtId)}
+              className="flex-1 h-11 rounded-xl bg-gradient-to-r from-primary to-primary-hover hover:shadow-lg hover:shadow-primary/30 text-white text-sm font-bold transition-all flex items-center justify-center gap-1.5 group/btn"
             >
-              Booked
+              <span>Đặt ngay</span>
+              <span className="material-symbols-outlined text-[18px] group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
+            </button>
+          ) : (
+            <button
+              disabled
+              className="flex-1 h-11 rounded-xl bg-gray-200 dark:bg-gray-700 text-[#616e89] dark:text-gray-400 text-sm font-bold cursor-not-allowed"
+            >
+              Không khả dụng
             </button>
           )}
         </div>

@@ -9,7 +9,7 @@ const priceRuleService = {
         size: size.toString(),
         ...filters
       });
-      const response = await axiosInstance.get(`/api/price-rules?${params}`);
+      const response = await axiosInstance.get(`/price-rules?${params}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching price rules:', error);
@@ -20,7 +20,7 @@ const priceRuleService = {
   // Get price rule by ID
   getPriceRuleById: async (id) => {
     try {
-      const response = await axiosInstance.get(`/api/price-rules/${id}`);
+      const response = await axiosInstance.get(`/price-rules/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching price rule:', error);
@@ -31,7 +31,7 @@ const priceRuleService = {
   // Create new price rule
   createPriceRule: async (priceRuleData) => {
     try {
-      const response = await axiosInstance.post('/api/price-rules', priceRuleData);
+      const response = await axiosInstance.post('/price-rules', priceRuleData);
       return response.data;
     } catch (error) {
       console.error('Error creating price rule:', error);
@@ -42,7 +42,7 @@ const priceRuleService = {
   // Update price rule
   updatePriceRule: async (id, priceRuleData) => {
     try {
-      const response = await axiosInstance.put(`/api/price-rules/${id}`, priceRuleData);
+      const response = await axiosInstance.put(`/price-rules/${id}`, priceRuleData);
       return response.data;
     } catch (error) {
       console.error('Error updating price rule:', error);
@@ -53,7 +53,7 @@ const priceRuleService = {
   // Delete price rule
   deletePriceRule: async (id) => {
     try {
-      const response = await axiosInstance.delete(`/api/price-rules/${id}`);
+      const response = await axiosInstance.delete(`/price-rules/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting price rule:', error);

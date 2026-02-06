@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verify Booking Integration</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Verify Booking Integration</h1>
+    
+    <h2>Step 1: Check if files exist</h2>
+    <div id="files"></div>
+    
+    <h2>Step 2: Test API</h2>
+    <button onclick="testAPI()">Test Booking API</button>
+    <div id="api-result"></div>
+    
+    <h2>Step 3: Instructions</h2>
+    <ol>
+        <li>Open browser DevTools (F12)</li>
+        <li>Go to http://localhost:3000/courts/17</li>
+        <li>Check Console for: "🔄 CourtDetails loaded - Booking integration active"</li>
+        <li>Select a time slot</li>
+        <li>Click "Tiếp tục đặt sân" button</li>
+        <li>Check Console for: "🎯 handleBooking called!"</li>
+    </ol>
+    
+    <script>
+        function testAPI() {
+            const result = document.getElementById('api-result');
+            result.innerHTML = 'Testing...';
+            
+            fetch('http://localhost:8080/api/bookings?userId=1', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    courtId: 17,
+                    playDate: '2026-02-05',
+                    startTime: { hour: 6, minute: 0, second: 0, nano: 0 },
+                    endTime: { hour: 8, minute: 0, second: 0, nano: 0 },
+                    notes: 'Test booking from verify script'
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                result.innerHTML = '<div class="success">✅ API works! Booking ID: ' + data.bookingId + '</div>';
+                result.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                result.innerHTML = '<div class="error">❌ API Error: ' + error.message + '</div>';
+            });
+        }
+    </script>
+</body>
+</html>

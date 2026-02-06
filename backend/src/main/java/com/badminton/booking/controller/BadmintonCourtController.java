@@ -3,15 +3,20 @@ package com.badminton.booking.controller;
 import com.badminton.booking.dto.request.BadmintonCourtCreateRequest;
 import com.badminton.booking.dto.request.BadmintonCourtUpdateRequest;
 import com.badminton.booking.dto.response.BadmintonCourtResponse;
+import com.badminton.booking.dto.response.CourtDetailResponse;
 import com.badminton.booking.service.BadmintonCourtService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Slice;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @Tag(name = "Badminton Courts", description = "Endpoints for managing badminton courts")
 @RestController
@@ -68,5 +73,22 @@ public class BadmintonCourtController {
     }
 
 
+    /**
+     * API MỚI: Lấy chi tiết sân đầy đủ cho trang Chi tiết sân
+     * Bao gồm: thông tin sân + bảng giá + slot trống
+     * Chỉ cần 1 API thay vì 3 API
+     */
+    @Operation(summary = "Get Court Detail",
+               description = "Get full court details including prices and available slots. Use this for Court Detail page.")
+    @GetMapping("/{courtId}/detail")
+    public ResponseEntity<CourtDetailResponse> getCourtDetail(
+            @Parameter(description = "Court ID")
+            @PathVariable Integer courtId,
 
+            @Parameter(description = "Date to check availability (default: today)", example = "2026-02-05")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+        CourtDetailResponse response = badmintonCourtService.getCourtDetail(courtId, date);
+        return ResponseEntity.ok(response);
+    }
 }

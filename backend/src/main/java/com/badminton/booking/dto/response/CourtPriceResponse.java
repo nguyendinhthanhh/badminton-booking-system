@@ -7,6 +7,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -25,4 +26,10 @@ public class CourtPriceResponse {
 
     private BigDecimal pricePerHour;
     private Boolean isActive;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime updatedAt;
 }

@@ -1,9 +1,13 @@
 package com.badminton.booking.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalTime;
 
 @Data
 @Builder
@@ -19,4 +23,18 @@ public class BadmintonCourtResponse {
     private String description;
     private String imageUrl;
     private Integer capacity;
+
+    // ===== THÔNG TIN GIÁ =====
+    private BigDecimal minPricePerHour;
+    private BigDecimal maxPricePerHour;
+
+    // ===== GIỜ HOẠT ĐỘNG =====
+    @JsonFormat(pattern = "HH:mm")
+    private LocalTime openTime;
+
+    @JsonFormat(pattern = "HH:mm")
+    private LocalTime closeTime;
+
+    // ===== TRẠNG THÁI HÔM NAY =====
+    private Boolean isAvailableToday;
 }

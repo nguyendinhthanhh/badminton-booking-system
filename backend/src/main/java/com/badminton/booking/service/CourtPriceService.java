@@ -24,6 +24,11 @@ public interface CourtPriceService {
     List<CourtPriceResponse> getPricesByCourtIdAndDayType(Integer courtId, DayType dayType);
 
     /**
+     * Lấy tất cả giá sân
+     */
+    List<CourtPriceResponse> getAllPrices();
+
+    /**
      * Lấy giá cho sân tại thời điểm cụ thể
      * @param courtId ID sân
      * @param date Ngày (để xác định WEEKDAY/WEEKEND)
@@ -37,4 +42,3 @@ public interface CourtPriceService {
      */
     List<CourtPriceResponse> createDefaultPricesForCourt(Integer courtId);
 }
-

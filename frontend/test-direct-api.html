@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct API Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; font-size: 16px; }
+        pre { background: #2d2d2d; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Direct API Test - Check Availability</h1>
+    
+    <button onclick="testWithFetch()">Test with Fetch</button>
+    <button onclick="testWithXHR()">Test with XMLHttpRequest</button>
+    
+    <h2>Result:</h2>
+    <pre id="result">Click a button to test...</pre>
+    
+    <script>
+        async function testWithFetch() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing with Fetch...';
+            
+            const url = 'http://localhost:8080/api/bookings/check-availability?' + 
+                        'courtId=17&' +
+                        'playDate=2026-02-05&' +
+                        'startTime=10:00&' +
+                        'endTime=12:00';
+            
+            console.log('📤 URL:', url);
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                console.log('📥 Status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    result.className = 'success';
+                    result.textContent = '✅ SUCCESS:\n\n' + JSON.stringify(data, null, 2);
+                } else {
+                    const text = await response.text();
+                    result.className = 'error';
+                    result.textContent = `❌ ERROR ${response.status}:\n\n${text}`;
+                }
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = '❌ NETWORK ERROR:\n\n' + error.message;
+            }
+        }
+        
+        function testWithXHR() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing with XMLHttpRequest...';
+            
+            const url = 'http://localhost:8080/api/bookings/check-availability?' + 
+                        'courtId=17&' +
+                        'playDate=2026-02-05&' +
+                        'startTime=10:00&' +
+                        'endTime=12:00';
+            
+            console.log('📤 URL:', url);
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.setRequestHeader('Accept', 'application/json');
+            
+            xhr.onload = function() {
+                console.log('📥 Status:', xhr.status);
+                
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    result.className = 'success';
+                    result.textContent = '✅ SUCCESS:\n\n' + JSON.stringify(JSON.parse(xhr.responseText), null, 2);
+                } else {
+                    result.className = 'error';
+                    result.textContent = `❌ ERROR ${xhr.status}:\n\n${xhr.responseText}`;
+                }
+            };
+            
+            xhr.onerror = function() {
+                result.className = 'error';
+                result.textContent = '❌ NETWORK ERROR';
+            };
+            
+            xhr.send();
+        }
+    </script>
+</body>
+</html>
