@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Booking API</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #1a202c;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        .subtitle {
+            color: #718096;
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 30px 0;
+        }
+        button {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-check {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-check:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .btn-price {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .btn-price:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 87, 108, 0.3);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+        }
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result.success {
+            background: #f0fdf4;
+            border: 2px solid #86efac;
+        }
+        .result.error {
+            background: #fef2f2;
+            border: 2px solid #fca5a5;
+        }
+        .result.info {
+            background: #eff6ff;
+            border: 2px solid #93c5fd;
+        }
+        .result-title {
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .result.success .result-title { color: #16a34a; }
+        .result.error .result-title { color: #dc2626; }
+        .result.info .result-title { color: #2563eb; }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .api-url {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #475569;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Booking API</h1>
+        <p class="subtitle">Kiểm tra API check-availability và calculate-price</p>
+
+        <div class="form-group">
+            <label>🏸 Court ID</label>
+            <input type="number" id="courtId" value="17">
+        </div>
+
+        <div class="form-group">
+            <label>📅 Play Date</label>
+            <input type="date" id="playDate" value="2026-02-05">
+        </div>
+
+        <div class="form-group">
+            <label>🕐 Start Time</label>
+            <select id="startTime">
+                <option value="">-- Chọn giờ bắt đầu --</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>🕐 End Time</label>
+            <select id="endTime">
+                <option value="">-- Chọn giờ kết thúc --</option>
+            </select>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-check" onclick="checkAvailability()">
+                <span id="checkIcon">✅</span>
+                <span id="checkText">Check Availability</span>
+            </button>
+            <button class="btn-price" onclick="calculatePrice()">
+                <span id="priceIcon">💰</span>
+                <span id="priceText">Calculate Price</span>
+            </button>
+        </div>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+
+        // Generate time options
+        function generateTimeOptions() {
+            const startSelect = document.getElementById('startTime');
+            const endSelect = document.getElementById('endTime');
+            
+            for (let hour = 6; hour <= 22; hour++) {
+                for (let min = 0; min < 60; min += 30) {
+                    const timeStr = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+                    const label = `${hour.toString().padStart(2, '0')}h${min.toString().padStart(2, '0')}`;
+                    
+                    const option1 = new Option(label, timeStr);
+                    const option2 = new Option(label, timeStr);
+                    startSelect.add(option1);
+                    endSelect.add(option2);
+                }
+            }
+            
+            // Set default values
+            startSelect.value = '07:00';
+            endSelect.value = '10:00';
+        }
+
+        function showResult(type, title, data, url) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type} show`;
+            resultDiv.innerHTML = `
+                <div class="result-title">
+                    ${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'} ${title}
+                </div>
+                <div class="api-url"><strong>API:</strong> ${url}</div>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+
+        function setLoading(button, isLoading, iconId, textId, originalText) {
+            const icon = document.getElementById(iconId);
+            const text = document.getElementById(textId);
+            
+            if (isLoading) {
+                button.disabled = true;
+                icon.innerHTML = '<div class="loading"></div>';
+                text.textContent = 'Loading...';
+            } else {
+                button.disabled = false;
+                icon.textContent = iconId === 'checkIcon' ? '✅' : '💰';
+                text.textContent = originalText;
+            }
+        }
+
+        async function checkAvailability() {
+            const courtId = document.getElementById('courtId').value;
+            const playDate = document.getElementById('playDate').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+
+            if (!courtId || !playDate || !startTime || !endTime) {
+                alert('Vui lòng điền đầy đủ thông tin!');
+                return;
+            }
+
+            const url = `${API_BASE}/bookings/check-availability?courtId=${courtId}&playDate=${playDate}&startTime=${startTime}&endTime=${endTime}`;
+            const button = document.querySelector('.btn-check');
+            
+            setLoading(button, true, 'checkIcon', 'checkText', 'Check Availability');
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(
+                        data.available ? 'success' : 'error',
+                        data.available ? 'Sân còn trống!' : 'Sân đã được đặt',
+                        data,
+                        url
+                    );
+                } else {
+                    showResult('error', 'API Error', data, url);
+                }
+            } catch (error) {
+                showResult('error', 'Network Error', { message: error.message }, url);
+            } finally {
+                setLoading(button, false, 'checkIcon', 'checkText', 'Check Availability');
+            }
+        }
+
+        async function calculatePrice() {
+            const courtId = document.getElementById('courtId').value;
+            const playDate = document.getElementById('playDate').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+
+            if (!courtId || !playDate || !startTime || !endTime) {
+                alert('Vui lòng điền đầy đủ thông tin!');
+                return;
+            }
+
+            const url = `${API_BASE}/bookings/calculate-price?courtId=${courtId}&playDate=${playDate}&startTime=${startTime}&endTime=${endTime}`;
+            const button = document.querySelector('.btn-price');
+            
+            setLoading(button, true, 'priceIcon', 'priceText', 'Calculate Price');
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('info', `Tổng giá: ${data.totalPrice?.toLocaleString()}đ`, data, url);
+                } else {
+                    showResult('error', 'API Error', data, url);
+                }
+            } catch (error) {
+                showResult('error', 'Network Error', { message: error.message }, url);
+            } finally {
+                setLoading(button, false, 'priceIcon', 'priceText', 'Calculate Price');
+            }
+        }
+
+        // Initialize
+        generateTimeOptions();
+    </script>
+</body>
+</html>

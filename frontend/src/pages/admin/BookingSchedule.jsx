@@ -2,8 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import scheduleService from '../../services/scheduleService';
 import Toast from '../../components/common/Toast';
 import BookingDetailSkeleton from '../../components/common/BookingDetailSkeleton';
+import useDataStore from '../../store/useDataStore';
 
 const BookingSchedule = () => {
+  const { 
+    bookingSchedule: cachedSchedule,
+    isCacheValid,
+    setBookingSchedule,
+    updateBookingInSchedule,
+    invalidateBookingSchedule
+  } = useDataStore();
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookingDetail, setBookingDetail] = useState(null);
@@ -55,17 +64,18 @@ const BookingSchedule = () => {
   }, [selectedDate]);
 
   const fetchTimeline = async () => {
-    setLoading(true);
-    try {
-      // Fetch timeline and statistics in parallel
-      const [timelineData, statsData] = await Promise.all([
-        scheduleService.getTimeline(selectedDate),
-        scheduleService.getStatistics(selectedDate)
-      ]);
+    // Check cache first
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    const hasCachedData = cachedSchedule.data && 
+                          cachedSchedule.selectedDate === dateStr &&
+                          isCacheValid(cachedSchedule.lastFetch);
+
+    if (hasCachedData) {
+      console.log('Using cached booking schedule');
+      // Use cached data
+      const timelineData = cachedSchedule.data;
       
-      // Process timeline data - map from API structure
       if (timelineData.courts) {
-        // Map courts from API response
         const mappedCourts = timelineData.courts.map(court => ({
           id: court.courtId,
           name: court.courtName,
@@ -74,7 +84,6 @@ const BookingSchedule = () => {
         }));
         setCourts(mappedCourts);
 
-        // Extract bookings from slots
         const mappedBookings = [];
         timelineData.courts.forEach(court => {
           if (court.slots) {
@@ -83,8 +92,63 @@ const BookingSchedule = () => {
                 mappedBookings.push({
                   id: slot.bookingDetailId || slot.bookingId || slot.slotId,
                   courtId: court.courtId,
-                  startTime: slot.startTime.substring(0, 5), // Format HH:MM
-                  endTime: slot.endTime.substring(0, 5), // Format HH:MM
+                  startTime: slot.startTime.substring(0, 5),
+                  endTime: slot.endTime.substring(0, 5),
+                  status: slot.status === 'BOOKED' ? 'CONFIRMED' : 'PENDING',
+                  customerName: slot.customerName || 'Unknown',
+                  phone: slot.customerPhone,
+                  payment: slot.status === 'BOOKED' ? 'paid' : 'pending',
+                  price: slot.price
+                });
+              }
+            });
+          }
+        });
+        setBookings(mappedBookings);
+      }
+      
+      if (timelineData.statistics) {
+        setStats({
+          totalBookings: timelineData.statistics.bookedSlots || 0,
+          dailyRevenue: timelineData.statistics.totalRevenue || 0
+        });
+      }
+      
+      setLoading(false);
+      return;
+    }
+
+    // Fetch from API
+    console.log('Fetching booking schedule from API');
+    setLoading(true);
+    try {
+      const [timelineData, statsData] = await Promise.all([
+        scheduleService.getTimeline(selectedDate),
+        scheduleService.getStatistics(selectedDate)
+      ]);
+      
+      // Cache the data
+      setBookingSchedule(timelineData, dateStr);
+      
+      if (timelineData.courts) {
+        const mappedCourts = timelineData.courts.map(court => ({
+          id: court.courtId,
+          name: court.courtName,
+          type: court.courtType,
+          status: court.courtStatus
+        }));
+        setCourts(mappedCourts);
+
+        const mappedBookings = [];
+        timelineData.courts.forEach(court => {
+          if (court.slots) {
+            court.slots.forEach(slot => {
+              if (slot.status === 'BOOKED' || slot.status === 'PENDING') {
+                mappedBookings.push({
+                  id: slot.bookingDetailId || slot.bookingId || slot.slotId,
+                  courtId: court.courtId,
+                  startTime: slot.startTime.substring(0, 5),
+                  endTime: slot.endTime.substring(0, 5),
                   status: slot.status === 'BOOKED' ? 'CONFIRMED' : 'PENDING',
                   customerName: slot.customerName || 'Unknown',
                   phone: slot.customerPhone,
@@ -257,6 +321,13 @@ const BookingSchedule = () => {
       };
 
       await scheduleService.updateBooking(bookingDetail.bookingId, updateData);
+      
+      // Update cache
+      updateBookingInSchedule({
+        bookingDetailId: bookingDetail.bookingDetailId,
+        ...updateData
+      });
+      
       showToast('Cập nhật booking thành công', 'success');
       setIsEditMode(false);
       

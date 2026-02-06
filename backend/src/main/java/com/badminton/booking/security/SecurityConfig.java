@@ -49,6 +49,18 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/api-docs/**"
                         ).permitAll()
+                        // API lịch đặt sân công khai cho guest/customer
+                        .requestMatchers("/api/schedule/public/**").permitAll()
+
+                        .requestMatchers("/api/courts/*/detail").permitAll()
+                        
+                        // API booking công khai cho customer
+                        .requestMatchers("/api/bookings/check-availability").permitAll()
+                        .requestMatchers("/api/bookings/calculate-price").permitAll()
+                        .requestMatchers("/api/bookings/court/*/available-slots").permitAll()
+                        .requestMatchers("/api/bookings/court/*").permitAll()
+                        .requestMatchers("/api/bookings").permitAll() // POST create booking
+                        
                         // API lịch đặt sân - yêu cầu xác thực
                         .requestMatchers("/api/schedule/admin/**").authenticated()
                         // API quản lý người dùng - yêu cầu xác thực

@@ -9,6 +9,7 @@ import TableSkeleton from '../../components/common/TableSkeleton';
 import CacheIndicator from '../../components/common/CacheIndicator';
 import ModalSkeleton from '../../components/common/ModalSkeleton';
 import useDataStore from '../../store/useDataStore';
+import useAuthStore from '../../store/useAuthStore';
 
 const UserManagement = () => {
   // Get cached data from store
@@ -215,6 +216,17 @@ const UserManagement = () => {
       } else {
         await userService.updateUser(selectedUser.id, userData);
         showToast('Cập nhật người dùng thành công', 'success');
+        
+        // If updating current logged-in user, refresh their auth data
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser && currentUser.id === selectedUser.id) {
+          try {
+            const updatedProfile = await userService.getUserById(selectedUser.id);
+            useAuthStore.getState().setUser(updatedProfile);
+          } catch (err) {
+            console.error('Failed to refresh current user profile:', err);
+          }
+        }
       }
       setIsFormModalOpen(false);
       setSelectedUser(null);

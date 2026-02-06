@@ -14,8 +14,6 @@ public interface CourtPriceMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "court", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     CourtPrice toEntity(CourtPriceRequest request);
 
     @Mapping(source = "court.id", target = "courtId")
@@ -25,11 +23,10 @@ public interface CourtPriceMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "court", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(@MappingTarget CourtPrice courtPrice, CourtPriceRequest request);
 
     @Named("dayTypeToName")
+    @SuppressWarnings("unused")
     default String dayTypeToName(DayType dayType) {
         if (dayType == null) return null;
         return switch (dayType) {
@@ -39,4 +36,3 @@ public interface CourtPriceMapper {
         };
     }
 }
-

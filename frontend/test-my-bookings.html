@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test My Bookings API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button, select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input {
+            width: 200px;
+        }
+        select {
+            width: 220px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .booking-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .booking-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px 8px 0 0;
+            margin: -15px -15px 15px -15px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-PENDING { background: #fff3cd; color: #856404; }
+        .status-CONFIRMED { background: #d1ecf1; color: #0c5460; }
+        .status-COMPLETED { background: #d4edda; color: #155724; }
+        .status-CANCELLED { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test My Bookings API</h1>
+        
+        <div class="form-group">
+            <label>Token:</label>
+            <input type="text" id="token" placeholder="Bearer token" style="width: 500px;">
+        </div>
+        
+        <div class="form-group">
+            <label>From Date:</label>
+            <input type="date" id="fromDate" value="2026-02-05">
+        </div>
+        
+        <div class="form-group">
+            <label>To Date:</label>
+            <input type="date" id="toDate" value="2026-02-05">
+        </div>
+        
+        <div class="form-group">
+            <label>Status:</label>
+            <select id="status">
+                <option value="">All</option>
+                <option value="PENDING">PENDING</option>
+                <option value="CONFIRMED">CONFIRMED</option>
+                <option value="PLAYING">PLAYING</option>
+                <option value="COMPLETED">COMPLETED</option>
+                <option value="CANCELLED">CANCELLED</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Payment Status:</label>
+            <select id="paymentStatus">
+                <option value="">All</option>
+                <option value="UNPAID">UNPAID</option>
+                <option value="PAID">PAID</option>
+                <option value="REFUNDED">REFUNDED</option>
+            </select>
+        </div>
+        
+        <button onclick="fetchBookings()">Fetch My Bookings</button>
+        <button onclick="clearResult()">Clear</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        async function fetchBookings() {
+            const token = document.getElementById('token').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const status = document.getElementById('status').value;
+            const paymentStatus = document.getElementById('paymentStatus').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!token) {
+                resultDiv.textContent = 'Please enter a token';
+                return;
+            }
+            
+            try {
+                resultDiv.textContent = 'Loading...';
+                
+                // Build query params
+                const params = new URLSearchParams();
+                if (fromDate) params.append('fromDate', fromDate);
+                if (toDate) params.append('toDate', toDate);
+                if (status) params.append('status', status);
+                if (paymentStatus) params.append('paymentStatus', paymentStatus);
+                
+                const url = `http://localhost:8080/api/bookings/my-bookings${params.toString() ? '?' + params.toString() : ''}`;
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayBookings(data);
+                } else {
+                    resultDiv.textContent = `Error: ${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        function displayBookings(bookings) {
+            const resultDiv = document.getElementById('result');
+            
+            if (!bookings || bookings.length === 0) {
+                resultDiv.innerHTML = '<p>No bookings found</p>';
+                return;
+            }
+            
+            let html = `<h3>Found ${bookings.length} booking(s)</h3>`;
+            
+            bookings.forEach(booking => {
+                html += `
+                    <div class="booking-card">
+                        <div class="booking-header">
+                            <h3>${booking.courtName} (${booking.courtType})</h3>
+                            <span class="status-badge status-${booking.status}">${booking.status}</span>
+                        </div>
+                        <p><strong>Booking ID:</strong> ${booking.bookingId}</p>
+                        <p><strong>Date:</strong> ${booking.playDate}</p>
+                        <p><strong>Time:</strong> ${booking.startTime} - ${booking.endTime}</p>
+                        <p><strong>Duration:</strong> ${booking.durationMinutes} minutes</p>
+                        <p><strong>Customer:</strong> ${booking.customerName} (${booking.customerPhone})</p>
+                        <p><strong>Payment Status:</strong> ${booking.paymentStatus}</p>
+                        <p><strong>Base Price:</strong> ${booking.basePrice.toLocaleString('vi-VN')} VND</p>
+                        <p><strong>Total Price:</strong> ${booking.totalPrice.toLocaleString('vi-VN')} VND</p>
+                        ${booking.notes ? `<p><strong>Notes:</strong> ${booking.notes}</p>` : ''}
+                        ${booking.priceBreakdown && booking.priceBreakdown.length > 0 ? `
+                            <details>
+                                <summary><strong>Price Breakdown</strong></summary>
+                                <pre>${JSON.stringify(booking.priceBreakdown, null, 2)}</pre>
+                            </details>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            resultDiv.innerHTML = html;
+        }
+        
+        function clearResult() {
+            document.getElementById('result').textContent = '';
+        }
+        
+        // Set today's date as default
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('fromDate').value = today;
+        document.getElementById('toDate').value = today;
+    </script>
+</body>
+</html>

@@ -1,15 +1,20 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore.js';
 
-const ProtectedRoute = ({ redirectPath = '/login' }) => {
-    const accessToken = useAuthStore((state) => state.accessToken);
+const ProtectedRoute = ({ redirectPath = '/login', requiredRole }) => {
+    const { accessToken, user } = useAuthStore();
 
     if (!accessToken) {
         // Nếu không có token, chuyển hướng về trang login
         return <Navigate to={redirectPath} replace />;
     }
 
-    // Nếu đã login, cho phép truy cập vào các route con (AdminLayout, Dashboard,...)
+    if (requiredRole && user?.roleName !== requiredRole) {
+        // Nếu đã login nhưng không đúng role, chuyển về trang chủ
+        return <Navigate to="/" replace />;
+    }
+
+    // Nếu đã login (và đúng role nếu yêu cầu), cho phép truy cập
     return <Outlet />;
 };
 

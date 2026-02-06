@@ -146,9 +146,25 @@ const AdminHeader = () => {
             }}
             className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center">
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt="Avatar"
+                className="w-9 h-9 rounded-full object-cover border-2 border-blue-600/20"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.style.display = 'none';
+                  const fallback = e.target.nextElementSibling;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center"
+              style={{ display: user?.avatar ? 'none' : 'flex' }}
+            >
               <span className="text-white font-semibold text-sm">
-                {user?.fullName?.charAt(0) || 'A'}
+                {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || 'A'}
               </span>
             </div>
             <div className="hidden lg:block text-left">

@@ -56,6 +56,19 @@ const courtService = {
       console.error('Error deleting court:', error);
       throw error;
     }
+  },
+
+  // Lấy chi tiết sân với giá và availability theo ngày
+  getCourtDetailByDate: async (id, date) => {
+    try {
+      const response = await axiosClient.get(`/courts/${id}/detail`, {
+        params: { date }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching court detail by date:', error);
+      throw error;
+    }
   }
 };
 

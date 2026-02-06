@@ -30,9 +30,9 @@ const GuestHeader = () => {
             <Link className="text-sm font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors" to="/">
               Trang chủ
             </Link>
-            <a className="text-sm font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors" href="#">
-              Danh sách sân
-            </a>
+            <Link className="text-sm font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors" to="/courts">
+              Đặt sân
+            </Link>
             <a className="text-sm font-medium text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors" href="#">
               Bảng giá
             </a>
@@ -47,15 +47,31 @@ const GuestHeader = () => {
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
-                  <div className="bg-primary/10 rounded-full size-8 flex items-center justify-center text-primary font-bold text-sm">
-                    {user.fullName?.charAt(0) || 'U'}
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="Avatar"
+                      className="size-9 rounded-full object-cover border-2 border-primary/30 shadow-sm"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.style.display = 'none';
+                        const fallback = e.target.nextElementSibling;
+                        if (fallback) fallback.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div 
+                    className="bg-primary/10 rounded-full size-9 flex items-center justify-center text-primary font-bold text-sm shadow-sm"
+                    style={{ display: user.avatar ? 'none' : 'flex' }}
+                  >
+                    {user.fullName?.charAt(0)?.toUpperCase() || user.username?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
                   <span className="hidden sm:block text-sm font-medium text-slate-900 dark:text-white">
                     {user.fullName || user.username}
                   </span>
-                  <span className="material-symbols-outlined text-slate-600 dark:text-slate-300">
+                  <span className="material-symbols-outlined text-slate-600 dark:text-slate-300 text-[20px]">
                     {showUserMenu ? 'expand_less' : 'expand_more'}
                   </span>
                 </button>

@@ -97,6 +97,12 @@ public class CourtPriceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(courtPriceService.createDefaultPricesForCourt(courtId));
     }
 
+    @GetMapping
+    @Operation(summary = "Lấy tất cả giá sân")
+    public ResponseEntity<List<CourtPriceResponse>> getAllPrices() {
+        return ResponseEntity.ok(courtPriceService.getAllPrices());
+    }
+
     private String getDayType(LocalDate date) {
         java.time.DayOfWeek day = date.getDayOfWeek();
         if (day == java.time.DayOfWeek.SATURDAY || day == java.time.DayOfWeek.SUNDAY) {
@@ -105,4 +111,3 @@ public class CourtPriceController {
         return "WEEKDAY";
     }
 }
-
