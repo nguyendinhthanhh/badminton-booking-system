@@ -69,6 +69,36 @@ const courtService = {
       console.error('Error fetching court detail by date:', error);
       throw error;
     }
+  },
+
+  // Lọc sân theo điều kiện
+  filterCourts: async (filters = {}, page = 0, size = 20) => {
+    try {
+      // Build Params using URLSearchParams to handle arrays correctly for Spring Boot (types=A&types=B)
+      const params = new URLSearchParams();
+      params.append('page', page);
+      params.append('size', size);
+
+      if (filters.minPrice !== undefined && filters.minPrice !== null) {
+        params.append('minPrice', filters.minPrice);
+      }
+      if (filters.maxPrice !== undefined && filters.maxPrice !== null) {
+        params.append('maxPrice', filters.maxPrice);
+      }
+
+      if (filters.types && Array.isArray(filters.types)) {
+        filters.types.forEach(type => params.append('types', type));
+      }
+
+      // Default status to ACTIVE if not provided
+      params.append('status', filters.status || 'ACTIVE');
+
+      const response = await axiosClient.get('/courts/filter', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error filtering courts:', error);
+      throw error;
+    }
   }
 };
 

@@ -7,9 +7,12 @@ const useAuthStore = create(
     (set) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       isLoading: false,
 
       setAccessToken: (token) => set({ accessToken: token }),
+
+      setRefreshToken: (token) => set({ refreshToken: token }),
 
       setUser: (user) => set({ user }),
 
@@ -26,9 +29,10 @@ const useAuthStore = create(
           console.log("Login response:", res);
           console.log("Response data:", res.data);
 
-          // Set access token first so subsequent requests can use it
+          // Set both access token and refresh token
           set({
             accessToken: res.data.accessToken,
+            refreshToken: res.data.refreshToken,
           });
 
           // Fetch full user profile with all fields (gender, dateOfBirth, avatar, etc.)
@@ -71,8 +75,8 @@ const useAuthStore = create(
       },
 
       logout: () => {
-        // Chỉ cần xóa state local
-        set({ user: null, accessToken: null });
+        // Xóa cả access token và refresh token
+        set({ user: null, accessToken: null, refreshToken: null });
       },
     }),
     {
@@ -80,7 +84,24 @@ const useAuthStore = create(
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
       }),
+      storage: {
+        getItem: (name) => {
+          const str = localStorage.getItem(name);
+          if (!str || str === "undefined") return null;
+          try {
+            return JSON.parse(str);
+          } catch (e) {
+            console.error("Error parsing auth storage:", e);
+            return null;
+          }
+        },
+        setItem: (name, value) => {
+          localStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: (name) => localStorage.removeItem(name),
+      },
     },
   ),
 );

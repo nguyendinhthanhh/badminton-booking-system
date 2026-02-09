@@ -134,7 +134,7 @@ public class UserServiceImpl implements UserService {
         User updatedUser = userRepository.save(user);
         System.out.println("Saved Gender: " + updatedUser.getGender());
         System.out.println("=== END DEBUG ===");
-        
+
         return userMapper.toResponse(updatedUser);
     }
 
@@ -196,5 +196,16 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean existsByUsername(String username) {
         return userRepository.existsByUsername(username);
+    }
+
+    @Override
+    @Transactional
+    public void reindexUsers() {
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            // Just saving will trigger @PreUpdate -> updateSearchText()
+            user.updateSearchText(); // Explicitly call to be sure, though PreUpdate should handle it on save
+            userRepository.save(user);
+        }
     }
 }

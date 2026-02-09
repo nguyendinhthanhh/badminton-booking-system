@@ -29,6 +29,7 @@ public class CourtDetailResponse {
     private String location;
     private String description;
     private String imageUrl;
+    private java.util.List<String> images;
     private Integer capacity;
 
     // ===== GIÁ TÓM TẮT =====

@@ -21,7 +21,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-
 @RestController
 @RequestMapping("/api/bookings")
 @RequiredArgsConstructor
@@ -32,23 +31,17 @@ public class BookingController {
     private final UserRepository userRepository;
 
     @GetMapping("/check-availability")
-    @Operation(summary = "Kiểm tra khung giờ có trống không",
-               description = "Kiểm tra overlap với các booking hiện có. " +
-                           "Công thức: (start < existingEnd + buffer) && (end > existingStart)")
+    @Operation(summary = "Kiểm tra khung giờ có trống không", description = "Kiểm tra overlap với các booking hiện có. "
+            +
+            "Công thức: (start < existingEnd + buffer) && (end > existingStart)")
     public ResponseEntity<AvailabilityResponse> checkAvailability(
-            @Parameter(description = "ID sân", example = "1")
-            @RequestParam Integer courtId,
+            @Parameter(description = "ID sân", example = "1") @RequestParam Integer courtId,
 
-            @Parameter(description = "Ngày chơi (YYYY-MM-DD)", example = "2026-02-05")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate playDate,
+            @Parameter(description = "Ngày chơi (YYYY-MM-DD)", example = "2026-02-05") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate playDate,
 
-            @Parameter(description = "Giờ bắt đầu (HH:mm hoặc HH:mm:ss)",
-                       schema = @Schema(type = "string", format = "time", example = "07:00"))
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
+            @Parameter(description = "Giờ bắt đầu (HH:mm hoặc HH:mm:ss)", schema = @Schema(type = "string", format = "time", example = "07:00")) @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
 
-            @Parameter(description = "Giờ kết thúc (HH:mm hoặc HH:mm:ss)",
-                       schema = @Schema(type = "string", format = "time", example = "10:00"))
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime) {
+            @Parameter(description = "Giờ kết thúc (HH:mm hoặc HH:mm:ss)", schema = @Schema(type = "string", format = "time", example = "10:00")) @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime) {
 
         AvailabilityResponse response = bookingService.checkAvailability(courtId, playDate, startTime, endTime);
         return ResponseEntity.ok(response);
@@ -58,23 +51,16 @@ public class BookingController {
     // 2. CALCULATE PRICE
     // ========================================================
     @GetMapping("/calculate-price")
-    @Operation(summary = "Tính giá đặt sân",
-               description = "Tự động tách theo nhiều khung giá. " +
-                           "Ví dụ: 07:00-10:00 = (07-08: 60k) + (08-10: 80k*2) = 220k")
+    @Operation(summary = "Tính giá đặt sân", description = "Tự động tách theo nhiều khung giá. " +
+            "Ví dụ: 07:00-10:00 = (07-08: 60k) + (08-10: 80k*2) = 220k")
     public ResponseEntity<PriceCalculationResponse> calculatePrice(
-            @Parameter(description = "ID sân", example = "1")
-            @RequestParam Integer courtId,
+            @Parameter(description = "ID sân", example = "1") @RequestParam Integer courtId,
 
-            @Parameter(description = "Ngày chơi", example = "2026-02-05")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate playDate,
+            @Parameter(description = "Ngày chơi", example = "2026-02-05") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate playDate,
 
-            @Parameter(description = "Giờ bắt đầu (HH:mm hoặc HH:mm:ss)",
-                       schema = @Schema(type = "string", format = "time", example = "07:00"))
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
+            @Parameter(description = "Giờ bắt đầu (HH:mm hoặc HH:mm:ss)", schema = @Schema(type = "string", format = "time", example = "07:00")) @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
 
-            @Parameter(description = "Giờ kết thúc (HH:mm hoặc HH:mm:ss)",
-                       schema = @Schema(type = "string", format = "time", example = "10:00"))
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime) {
+            @Parameter(description = "Giờ kết thúc (HH:mm hoặc HH:mm:ss)", schema = @Schema(type = "string", format = "time", example = "10:00")) @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime) {
 
         PriceCalculationResponse response = bookingService.calculatePrice(courtId, playDate, startTime, endTime);
         return ResponseEntity.ok(response);
@@ -84,9 +70,8 @@ public class BookingController {
     // 3. CREATE BOOKING
     // ========================================================
     @PostMapping
-    @Operation(summary = "Tạo booking mới",
-               description = "Cho phép đặt thời lượng lẻ (1h, 1.5h, 2.5h...). " +
-                           "Tự động kiểm tra overlap và tính giá.")
+    @Operation(summary = "Tạo booking mới", description = "Cho phép đặt thời lượng lẻ (1h, 1.5h, 2.5h...). " +
+            "Tự động kiểm tra overlap và tính giá.")
     public ResponseEntity<BookingResponse> createBooking(
             @Valid @RequestBody CreateBookingRequest request,
             Authentication authentication) {
@@ -120,9 +105,8 @@ public class BookingController {
     // 5. EXTEND BOOKING
     // ========================================================
     @PostMapping("/{bookingId}/extend")
-    @Operation(summary = "Gia hạn booking",
-               description = "Chỉ cho phép nếu giờ tiếp theo còn trống. " +
-                           "Tính phí gia hạn theo khung giá tương ứng.")
+    @Operation(summary = "Gia hạn booking", description = "Chỉ cho phép nếu giờ tiếp theo còn trống. " +
+            "Tính phí gia hạn theo khung giá tương ứng.")
     public ResponseEntity<BookingResponse> extendBooking(
             @PathVariable Integer bookingId,
             @Valid @RequestBody ExtendBookingRequest request) {
@@ -135,13 +119,11 @@ public class BookingController {
     // 6. CALCULATE OVERTIME FEE
     // ========================================================
     @GetMapping("/{bookingId}/overtime")
-    @Operation(summary = "Tính phí overtime",
-               description = "Phí overtime = giá/giờ * 1.5 * số phút overtime")
+    @Operation(summary = "Tính phí overtime", description = "Phí overtime = giá/giờ * 1.5 * số phút overtime")
     public ResponseEntity<OvertimeResponse> calculateOvertimeFee(
             @PathVariable Integer bookingId,
 
-            @Parameter(description = "Giờ kết thúc thực tế (HH:mm hoặc HH:mm:ss)", example = "10:30")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime actualEndTime) {
+            @Parameter(description = "Giờ kết thúc thực tế (HH:mm hoặc HH:mm:ss)", example = "10:30") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime actualEndTime) {
 
         OvertimeResponse response = bookingService.calculateOvertimeFee(bookingId, actualEndTime);
         return ResponseEntity.ok(response);
@@ -151,14 +133,12 @@ public class BookingController {
     // 7. COMPLETE BOOKING (CHECK-OUT)
     // ========================================================
     @PostMapping("/{bookingId}/complete")
-    @Operation(summary = "Hoàn thành booking (check-out)",
-               description = "Tự động tính overtime nếu khách về muộn. " +
-                           "Không hoàn tiền nếu khách về sớm.")
+    @Operation(summary = "Hoàn thành booking (check-out)", description = "Tự động tính overtime nếu khách về muộn. " +
+            "Không hoàn tiền nếu khách về sớm.")
     public ResponseEntity<BookingResponse> completeBooking(
             @PathVariable Integer bookingId,
 
-            @Parameter(description = "Giờ kết thúc thực tế (HH:mm hoặc HH:mm:ss)", example = "10:00")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime actualEndTime) {
+            @Parameter(description = "Giờ kết thúc thực tế (HH:mm hoặc HH:mm:ss)", example = "10:00") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime actualEndTime) {
 
         BookingResponse response = bookingService.completeBooking(bookingId, actualEndTime);
         return ResponseEntity.ok(response);
@@ -168,8 +148,7 @@ public class BookingController {
     // 8. CHECK-IN
     // ========================================================
     @PostMapping("/{bookingId}/check-in")
-    @Operation(summary = "Check-in booking",
-               description = "Chuyển trạng thái từ CONFIRMED sang PLAYING")
+    @Operation(summary = "Check-in booking", description = "Chuyển trạng thái từ CONFIRMED sang PLAYING")
     public ResponseEntity<BookingResponse> checkIn(@PathVariable Integer bookingId) {
         BookingResponse response = bookingService.checkIn(bookingId);
         return ResponseEntity.ok(response);
@@ -179,9 +158,8 @@ public class BookingController {
     // 9. UPDATE STATUS
     // ========================================================
     @PatchMapping("/{bookingId}/status")
-    @Operation(summary = "Cập nhật trạng thái booking",
-               description = "PENDING → CONFIRMED → PLAYING → COMPLETED. " +
-                           "Có thể CANCELLED từ PENDING hoặc CONFIRMED")
+    @Operation(summary = "Cập nhật trạng thái booking", description = "PENDING → CONFIRMED → PLAYING → COMPLETED. " +
+            "Có thể CANCELLED từ PENDING hoặc CONFIRMED")
     public ResponseEntity<BookingResponse> updateStatus(
             @PathVariable Integer bookingId,
             @RequestParam String status) {
@@ -209,21 +187,17 @@ public class BookingController {
     // 10.1 GET MY BOOKINGS (từ token đăng nhập)
     // ========================================================
     @GetMapping("/my-bookings")
-    @Operation(summary = "Lấy danh sách booking của user đang đăng nhập",
-               description = "Lấy user ID từ token đăng nhập. Mặc định trả về tất cả booking. " +
-                           "Có thể filter theo ngày, trạng thái booking, trạng thái thanh toán")
+    @Operation(summary = "Lấy danh sách booking của user đang đăng nhập", description = "Lấy user ID từ token đăng nhập. Mặc định trả về tất cả booking. "
+            +
+            "Có thể filter theo ngày, trạng thái booking, trạng thái thanh toán")
     public ResponseEntity<List<BookingResponse>> getMyBookings(
-            @Parameter(description = "Ngày bắt đầu filter (YYYY-MM-DD)", example = "2026-01-01")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @Parameter(description = "Ngày bắt đầu filter (YYYY-MM-DD)", example = "2026-01-01") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
 
-            @Parameter(description = "Ngày kết thúc filter (YYYY-MM-DD)", example = "2026-02-28")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @Parameter(description = "Ngày kết thúc filter (YYYY-MM-DD)", example = "2026-02-28") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
 
-            @Parameter(description = "Trạng thái booking: PENDING, CONFIRMED, PLAYING, COMPLETED, CANCELLED", example = "CONFIRMED")
-            @RequestParam(required = false) String status,
+            @Parameter(description = "Trạng thái booking: PENDING, CONFIRMED, PLAYING, COMPLETED, CANCELLED", example = "CONFIRMED") @RequestParam(required = false) String status,
 
-            @Parameter(description = "Trạng thái thanh toán: UNPAID, PAID, REFUNDED", example = "PAID")
-            @RequestParam(required = false) String paymentStatus,
+            @Parameter(description = "Trạng thái thanh toán: UNPAID, PAID, REFUNDED", example = "PAID") @RequestParam(required = false) String paymentStatus,
 
             Authentication authentication) {
 
@@ -244,9 +218,8 @@ public class BookingController {
     // 10.2 CANCEL MY BOOKING (User tự hủy booking của mình)
     // ========================================================
     @PostMapping("/my-bookings/{bookingId}/cancel")
-    @Operation(summary = "User tự hủy booking của mình",
-               description = "Chỉ có thể hủy booking đang ở trạng thái PENDING (chưa được admin duyệt). " +
-                           "Booking đã CONFIRMED không thể tự hủy, phải liên hệ admin.")
+    @Operation(summary = "User tự hủy booking của mình", description = "Nếu PENDING: Hủy ngay lập tức. " +
+            "Nếu CONFIRMED: Chuyển sang CANCELLATION_REQUESTED (chờ admin duyệt).")
     public ResponseEntity<BookingResponse> cancelMyBooking(
             @PathVariable Integer bookingId,
 
@@ -268,6 +241,23 @@ public class BookingController {
     }
 
     // ========================================================
+    // 11. ADMIN CANCELLATION APPROVAL
+    // ========================================================
+    @PostMapping("/{bookingId}/cancellation/approve")
+    @Operation(summary = "Admin duyệt yêu cầu hủy booking", description = "Chuyển trạng thái từ CANCELLATION_REQUESTED sang CANCELLED")
+    public ResponseEntity<BookingResponse> approveCancellation(@PathVariable Integer bookingId) {
+        BookingResponse response = bookingService.approveCancellation(bookingId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{bookingId}/cancellation/reject")
+    @Operation(summary = "Admin từ chối yêu cầu hủy booking", description = "Chuyển trạng thái từ CANCELLATION_REQUESTED về CONFIRMED")
+    public ResponseEntity<BookingResponse> rejectCancellation(@PathVariable Integer bookingId) {
+        BookingResponse response = bookingService.rejectCancellation(bookingId);
+        return ResponseEntity.ok(response);
+    }
+
+    // ========================================================
     // 12. GET COURT BOOKINGS
     // ========================================================
     @GetMapping("/court/{courtId}")
@@ -285,8 +275,7 @@ public class BookingController {
     // 13. GET AVAILABLE SLOTS
     // ========================================================
     @GetMapping("/court/{courtId}/available-slots")
-    @Operation(summary = "Lấy các khung giờ trống của sân",
-               description = "Trả về danh sách các khoảng thời gian có thể đặt")
+    @Operation(summary = "Lấy các khung giờ trống của sân", description = "Trả về danh sách các khoảng thời gian có thể đặt")
     public ResponseEntity<List<AvailabilityResponse.AvailableSlot>> getAvailableSlots(
             @PathVariable Integer courtId,
 
@@ -294,5 +283,37 @@ public class BookingController {
 
         List<AvailabilityResponse.AvailableSlot> response = bookingService.getAvailableSlots(courtId, date);
         return ResponseEntity.ok(response);
+    }
+
+    // ========================================================
+    // 14. EARLY RELEASE - Mở slot do khách về sớm
+    // ========================================================
+    @PostMapping("/{bookingId}/release-early")
+    @Operation(summary = "Mở slot do khách về sớm (Early Release)", description = "Biến thời gian còn dư của booking thành slot rảnh có thể bán lại. "
+            +
+            "KHÔNG hoàn tiền, KHÔNG sửa endTime, KHÔNG động vào booking gốc. " +
+            "Chỉ tạo một released slot mới cho người khác đặt.\n\n" +
+            "**Rules:**\n" +
+            "- Booking phải COMPLETED\n" +
+            "- actualEndTime < endTime (khách về sớm)\n" +
+            "- Thời gian dư >= 30 phút\n" +
+            "- Slot chưa từng được release trước đó")
+    public ResponseEntity<EarlyReleaseResponse> releaseEarly(
+            @Parameter(description = "ID của booking đã COMPLETED", example = "123") @PathVariable Integer bookingId,
+
+            Authentication authentication) {
+
+        String releasedBy = "SYSTEM";
+        if (authentication != null && authentication.getName() != null) {
+            releasedBy = authentication.getName();
+        }
+
+        EarlyReleaseResponse response = bookingService.releaseEarly(bookingId, releasedBy);
+
+        if (response.isReleased()) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 }

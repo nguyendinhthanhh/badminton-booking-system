@@ -7,7 +7,7 @@ const CancelBookingModal = ({ booking, onClose, onConfirm, loading }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!reason.trim()) {
       setError('Vui lòng nhập lý do hủy');
       return;
@@ -36,6 +36,36 @@ const CancelBookingModal = ({ booking, onClose, onConfirm, loading }) => {
       day: 'numeric'
     });
   };
+
+  // Check if cancellation is within 30 minutes of start time
+  const checkIsLateCancellation = () => {
+    let startDateTime;
+    try {
+      const dateStr = booking.playDate;
+      let timeStr = "";
+
+      if (typeof booking.startTime === 'string') {
+        timeStr = booking.startTime;
+      } else if (typeof booking.startTime === 'object' && booking.startTime !== null) {
+        timeStr = `${String(booking.startTime.hour).padStart(2, '0')}:${String(booking.startTime.minute).padStart(2, '0')}:00`;
+      }
+
+      if (dateStr && timeStr) {
+        startDateTime = new Date(`${dateStr}T${timeStr}`);
+      }
+    } catch (e) {
+      console.error("Error parsing date/time:", e);
+    }
+
+    if (startDateTime) {
+      const now = new Date();
+      const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60000);
+      return startDateTime < thirtyMinutesFromNow;
+    }
+    return false;
+  };
+
+  const isLateCancellation = checkIsLateCancellation();
 
   const commonReasons = [
     'Bận việc đột xuất, không thể đến được',
@@ -96,91 +126,118 @@ const CancelBookingModal = ({ booking, onClose, onConfirm, loading }) => {
             </div>
           </div>
 
-          {/* Warning */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <div className="flex gap-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-yellow-800">
-                <p className="font-semibold mb-1">Lưu ý:</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  <li>Không thể hoàn tác sau khi hủy</li>
-                  <li>Chính sách hoàn tiền theo quy định</li>
-                </ul>
+          {/* Warning/Error */}
+          {isLateCancellation ? (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex gap-2">
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="text-sm text-red-800">
+                  <p className="font-bold mb-1">Không thể hủy đặt sân</p>
+                  <p>Theo quy định, bạn chỉ có thể hủy hoặc yêu cầu hủy sân trước giờ chơi ít nhất 30 phút.</p>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-3">
-            {/* Quick Reasons */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Lý do hủy
-              </label>
-              <div className="space-y-1.5">
-                {commonReasons.map((commonReason, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => setReason(commonReason)}
-                    className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-all ${
-                      reason === commonReason
-                        ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    {commonReason}
-                  </button>
-                ))}
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="flex gap-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-yellow-800">
+                  <p className="font-semibold mb-1">Lưu ý:</p>
+                  <ul className="list-disc list-inside space-y-0.5">
+                    <li>Không thể hoàn tác sau khi hủy</li>
+                    <li>Chính sách hoàn tiền theo quy định</li>
+                  </ul>
+                </div>
               </div>
             </div>
+          )}
 
-            {/* Custom Reason */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Hoặc nhập lý do khác
-              </label>
-              <textarea
-                value={reason}
-                onChange={(e) => {
-                  setReason(e.target.value);
-                  setError('');
-                }}
-                placeholder="Nhập lý do hủy (tối thiểu 10 ký tự)..."
-                rows={3}
-                className="w-full px-3 py-2 bg-white border-2 border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                {reason.length}/200 ký tự
-              </p>
-            </div>
-
-            {/* Error */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-2">
-                <p className="text-xs text-red-800">{error}</p>
+          {/* Form - Hide if late cancellation */}
+          {!isLateCancellation && (
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {/* Quick Reasons */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Lý do hủy
+                </label>
+                <div className="space-y-1.5">
+                  {commonReasons.map((commonReason, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setReason(commonReason)}
+                      className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-all ${reason === commonReason
+                          ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                        }`}
+                    >
+                      {commonReason}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
 
-            {/* Actions */}
-            <div className="flex gap-2 pt-2">
+              {/* Custom Reason */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hoặc nhập lý do khác
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => {
+                    setReason(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="Nhập lý do hủy (tối thiểu 10 ký tự)..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-white border-2 border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {reason.length}/200 ký tự
+                </p>
+              </div>
+
+              {/* Error */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                  <p className="text-xs text-red-800">{error}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Đóng
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || !reason.trim()}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Đang xử lý...' : 'Xác nhận hủy'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Close button only for late cancellation */}
+          {isLateCancellation && (
+            <div className="flex justify-end pt-2">
               <button
-                type="button"
                 onClick={onClose}
-                disabled={loading}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
               >
                 Đóng
               </button>
-              <button
-                type="submit"
-                disabled={loading || !reason.trim()}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Đang xử lý...' : 'Xác nhận hủy'}
-              </button>
             </div>
-          </form>
+          )}
         </div>
       </div>
     </div>

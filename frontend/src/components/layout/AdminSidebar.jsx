@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { FaPercentage, FaCogs } from 'react-icons/fa';
 import useAuthStore from '../../store/useAuthStore';
 
 const AdminSidebar = () => {
@@ -8,12 +9,13 @@ const AdminSidebar = () => {
 
   const menuItems = [
     { path: '/admin', icon: 'dashboard', label: 'Dashboard', exact: true },
+
     { path: '/admin/courts', icon: 'stadium', label: 'Quản lý sân' },
     { path: '/admin/court-prices', icon: 'payments', label: 'Giá sân' },
     { path: '/admin/users', icon: 'group', label: 'Người dùng' },
-    { path: '/admin/bookings', icon: 'event_available', label: 'Đặt sân' },
-    { path: '/admin/reports', icon: 'analytics', label: 'Báo cáo' },
-    { path: '/admin/settings', icon: 'settings', label: 'Cài đặt' }
+    { path: '/admin/bookings', icon: 'event_available', label: 'Lịch đặt sân' },
+    { path: '/admin/booking-management', icon: 'receipt_long', label: 'Quản lý Booking' },
+    { path: '/admin/system-config', icon: <FaCogs />, label: 'Cấu hình hệ thống' } // Updated icon to JSX
   ];
 
   const isActive = (path, exact = false) => {
@@ -31,14 +33,16 @@ const AdminSidebar = () => {
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
       {/* Logo */}
-      <div className="p-6 flex items-center gap-3 border-b border-gray-200">
-        <div className="bg-blue-600 p-2 rounded-lg flex items-center justify-center">
-          <span className="material-symbols-outlined text-3xl text-white">sports_tennis</span>
-        </div>
-        <div className="flex flex-col">
-          <h1 className="text-gray-900 text-lg font-bold leading-tight">BadmintonHub</h1>
-          <p className="text-gray-500 text-xs font-medium">Admin Portal</p>
-        </div>
+      <div className="p-6 border-b border-gray-200">
+        <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity group">
+          <div className="bg-blue-600 p-2 rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors">
+            <span className="material-symbols-outlined text-3xl text-white">sports_tennis</span>
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-gray-900 text-lg font-bold leading-tight">BadmintonHub</h1>
+            <p className="text-gray-500 text-xs font-medium">Admin Portal</p>
+          </div>
+        </Link>
       </div>
 
       {/* Navigation */}
@@ -47,11 +51,10 @@ const AdminSidebar = () => {
           <Link
             key={item.path}
             to={item.path}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-              isActive(item.path, item.exact)
-                ? 'bg-blue-50 text-blue-600 font-medium shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-            }`}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${isActive(item.path, item.exact)
+              ? 'bg-blue-50 text-blue-600 font-medium shadow-sm'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
           >
             <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
             <span className="text-sm">{item.label}</span>

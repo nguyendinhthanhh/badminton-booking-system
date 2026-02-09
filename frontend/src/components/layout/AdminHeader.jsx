@@ -19,6 +19,8 @@ const AdminHeader = () => {
     if (path.includes('/admin/payments')) return 'Quản lý thanh toán';
     if (path.includes('/admin/reports')) return 'Báo cáo';
     if (path.includes('/admin/settings')) return 'Cài đặt';
+    if (path.includes('/admin/system-config')) return 'Cấu hình hệ thống';
+    if (path.includes('/admin/profile')) return 'Hồ sơ cá nhân';
     return 'Admin';
   };
 
@@ -53,7 +55,7 @@ const AdminHeader = () => {
     // Logout immediately for better UX
     logoutStore();
     navigate('/login');
-    
+
     // Call API in background (don't wait)
     try {
       await userService.logout();
@@ -64,7 +66,7 @@ const AdminHeader = () => {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 z-10">
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 z-50 relative">
       {/* Left Section */}
       <div className="flex items-center gap-4">
         <h1 className="text-xl font-bold text-gray-900">{getPageTitle()}</h1>
@@ -159,7 +161,7 @@ const AdminHeader = () => {
                 }}
               />
             ) : null}
-            <div 
+            <div
               className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center"
               style={{ display: user?.avatar ? 'none' : 'flex' }}
             >
@@ -186,22 +188,44 @@ const AdminHeader = () => {
                   <p className="text-xs text-gray-500 mt-1">{user?.email || 'admin@badminton.com'}</p>
                 </div>
                 <div className="py-2">
-                  <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setShowProfile(false);
+                      navigate('/admin/profile'); // Assuming a profile page exists or will be created
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                  >
                     <span className="material-symbols-outlined text-xl">person</span>
                     <span>Hồ sơ của tôi</span>
                   </button>
-                  <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setShowProfile(false);
+                      navigate('/admin/system-config');
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                  >
                     <span className="material-symbols-outlined text-xl">settings</span>
                     <span>Cài đặt</span>
                   </button>
-                  <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setShowProfile(false);
+                      // Show toast or navigate to help
+                      // For now, just close as it might not be implemented
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                  >
                     <span className="material-symbols-outlined text-xl">help</span>
                     <span>Trợ giúp</span>
                   </button>
                 </div>
                 <div className="border-t border-gray-200 py-2">
-                  <button 
-                    onClick={handleLogout}
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setShowProfile(false);
+                    }}
                     className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
                   >
                     <span className="material-symbols-outlined text-xl">logout</span>

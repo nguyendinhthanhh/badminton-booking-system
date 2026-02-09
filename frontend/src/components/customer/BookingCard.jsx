@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, Clock, MapPin, CreditCard, AlertCircle, XCircle } from 'lucide-react';
+import CheckInCountdown from './CheckInCountdown';
 
 const BookingCard = ({ booking, onCancel }) => {
   const getStatusColor = (status) => {
@@ -8,7 +9,8 @@ const BookingCard = ({ booking, onCancel }) => {
       CONFIRMED: 'bg-blue-100 text-blue-800 border-blue-200',
       PLAYING: 'bg-purple-100 text-purple-800 border-purple-200',
       COMPLETED: 'bg-green-100 text-green-800 border-green-200',
-      CANCELLED: 'bg-red-100 text-red-800 border-red-200'
+      CANCELLED: 'bg-red-100 text-red-800 border-red-200',
+      CANCELLATION_REQUESTED: 'bg-orange-100 text-orange-800 border-orange-200'
     };
     return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
@@ -29,7 +31,17 @@ const BookingCard = ({ booking, onCancel }) => {
     }).format(amount);
   };
 
+  const formatTimeObject = (time) => {
+    if (!time) return '';
+    if (typeof time === 'string') return time.substring(0, 5);
+    if (typeof time === 'object' && time.hour !== undefined) {
+      return `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
+    }
+    return '';
+  };
+
   const formatDate = (dateString) => {
+    if (!dateString) return "";
     return new Date(dateString).toLocaleDateString('vi-VN', {
       weekday: 'long',
       year: 'numeric',
@@ -38,10 +50,22 @@ const BookingCard = ({ booking, onCancel }) => {
     });
   };
 
+  const formatDateWithTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString.replace(' ', 'T')); // Handle "YYYY-MM-DD HH:mm:ss" format
+    return date.toLocaleString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col h-full">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white">
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white shrink-0">
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-xl font-bold">{booking.courtName}</h3>
@@ -55,6 +79,32 @@ const BookingCard = ({ booking, onCancel }) => {
             </span>
           </div>
         </div>
+
+        {/* Check-in Countdown */}
+        {booking.checkInDeadline && (
+          <div className="mt-3">
+            <CheckInCountdown
+              checkInDeadline={booking.checkInDeadline}
+              status={booking.status}
+            />
+          </div>
+        )}
+
+        {/* Deposit Info */}
+        {booking.depositRequired && booking.depositAmount && (
+          <div className="mt-3 bg-white/10 rounded-lg p-2 text-xs">
+            <div className="flex justify-between">
+              <span>Đã cọc:</span>
+              <span className="font-semibold">{formatCurrency(booking.depositPaid || 0)}</span>
+            </div>
+            {booking.remainingAmount > 0 && (
+              <div className="flex justify-between mt-1">
+                <span>Còn lại:</span>
+                <span className="font-semibold">{formatCurrency(booking.remainingAmount)}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Body */}
@@ -73,7 +123,7 @@ const BookingCard = ({ booking, onCancel }) => {
           <div className="flex-1">
             <p className="text-sm text-gray-500">Thời gian</p>
             <p className="font-semibold text-gray-900">
-              {booking.startTime} - {booking.actualEndTime || booking.endTime}
+              {formatTimeObject(booking.startTime)} - {formatTimeObject(booking.actualEndTime || booking.endTime)}
               <span className="text-sm text-gray-500 ml-2">
                 ({booking.durationMinutes} phút)
               </span>
@@ -88,7 +138,7 @@ const BookingCard = ({ booking, onCancel }) => {
             {booking.priceBreakdown.map((period, index) => (
               <div key={index} className="flex justify-between text-sm">
                 <span className="text-gray-600">
-                  {period.periodStart} - {period.periodEnd}
+                  {formatTimeObject(period.periodStart)} - {formatTimeObject(period.periodEnd)}
                   <span className="text-xs text-gray-500 ml-1">
                     ({period.dayType === 'WEEKDAY' ? 'Ngày thường' : 'Cuối tuần'})
                   </span>
@@ -128,12 +178,48 @@ const BookingCard = ({ booking, onCancel }) => {
           </div>
         )}
 
-        {/* Notes */}
-        {booking.notes && (
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-sm text-gray-600">{booking.notes}</p>
-          </div>
-        )}
+
+        {/* Timestamp Summary */}
+        <div className="border-t border-gray-100 pt-3 mt-3 grid grid-cols-1 gap-2">
+          {booking.createdAt && (
+            <div className="flex justify-between text-[10px] text-gray-400">
+              <span>Ngày đặt:</span>
+              <span>{formatDateWithTime(booking.createdAt)}</span>
+            </div>
+          )}
+          {booking.confirmedAt && (
+            <div className="flex justify-between text-[10px] text-blue-500 font-medium">
+              <span>Xác nhận lúc:</span>
+              <span>{formatDateWithTime(booking.confirmedAt)}</span>
+            </div>
+          )}
+          {booking.checkedInAt && (
+            <div className="flex justify-between text-[10px] text-purple-500 font-medium">
+              <span>Check-in lúc:</span>
+              <span>{formatDateWithTime(booking.checkedInAt)}</span>
+            </div>
+          )}
+          {booking.completedAt && (
+            <div className="flex justify-between text-[10px] text-green-500 font-medium">
+              <span>Hoàn thành lúc:</span>
+              <span>{formatDateWithTime(booking.completedAt)}</span>
+            </div>
+          )}
+          {booking.cancelledAt && (
+            <div className="flex flex-col text-[10px] text-red-500 font-medium border-l-2 border-red-200 pl-2">
+              <div className="flex justify-between">
+                <span>Đã hủy lúc:</span>
+                <span>{formatDateWithTime(booking.cancelledAt)}</span>
+              </div>
+              {booking.cancelledBy && (
+                <div className="flex justify-between mt-0.5">
+                  <span>Người hủy:</span>
+                  <span>{booking.cancelledBy}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Footer */}
@@ -152,16 +238,35 @@ const BookingCard = ({ booking, onCancel }) => {
             </p>
           </div>
         </div>
-        
+
         {/* Cancel Button */}
         {(booking.status === 'PENDING' || booking.status === 'CONFIRMED') && (
           <button
             onClick={() => onCancel(booking)}
-            className="w-full mt-3 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+            className={`w-full mt-3 px-4 py-2 rounded-lg transition-colors font-medium text-sm flex items-center justify-center gap-2 ${booking.status === 'CONFIRMED'
+              ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+              : 'bg-red-50 text-red-600 hover:bg-red-100'
+              }`}
           >
-            <XCircle className="w-4 h-4" />
-            Hủy đặt sân
+            {booking.status === 'CONFIRMED' ? (
+              <>
+                <AlertCircle className="w-4 h-4" />
+                Yêu cầu hủy
+              </>
+            ) : (
+              <>
+                <XCircle className="w-4 h-4" />
+                Hủy đặt sân
+              </>
+            )}
           </button>
+        )}
+
+        {booking.status === 'CANCELLATION_REQUESTED' && (
+          <div className="w-full mt-3 px-4 py-2 bg-gray-100 text-gray-500 rounded-lg font-medium text-sm flex items-center justify-center gap-2 cursor-not-allowed">
+            <Clock className="w-4 h-4" />
+            Đang chờ hủy
+          </div>
         )}
       </div>
     </div>

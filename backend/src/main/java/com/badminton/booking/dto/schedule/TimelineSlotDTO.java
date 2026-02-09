@@ -1,5 +1,6 @@
 package com.badminton.booking.dto.schedule;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,22 +13,20 @@ import java.time.LocalTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL) // Không hiển thị các trường null
 public class TimelineSlotDTO {
-    private Integer slotId;
     private LocalTime startTime;
     private LocalTime endTime;
-    private Integer durationMinutes; // Thời lượng slot tính bằng phút
+    private Integer durationMinutes;
     private String periodName;
-    private String status; // AVAILABLE, BOOKED, PENDING, MAINTENANCE
+    private String status; // PENDING, CONFIRMED, PLAYING, COMPLETED
     private Integer bookingId;
-    private Integer bookingDetailId;
     private String customerName;
     private String customerPhone;
 
     // ===== THÔNG TIN GIÁ =====
-    private BigDecimal price;              // Giá cuối cùng
-    private BigDecimal basePrice;          // Giá cơ bản của sân
-    private BigDecimal slotMultiplier;     // Hệ số khung giờ
-    private BigDecimal weekendMultiplier;  // Hệ số cuối tuần (1.0 nếu ngày thường)
-    private Boolean isWeekend;             // Có phải cuối tuần không
+    private BigDecimal basePrice;          // Giá cơ bản
+    private BigDecimal totalPrice;         // Tổng tiền (bao gồm overtime, gia hạn...)
+    private String paymentStatus;          // UNPAID, PAID, REFUNDED
+    private Boolean isWeekend;
 }

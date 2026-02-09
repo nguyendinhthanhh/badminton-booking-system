@@ -37,4 +37,7 @@ public class BadmintonCourtResponse {
 
     // ===== TRẠNG THÁI HÔM NAY =====
     private Boolean isAvailableToday;
+
+    // ===== HÌNH ẢNH =====
+    private java.util.List<String> images;
 }

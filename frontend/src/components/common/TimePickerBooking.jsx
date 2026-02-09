@@ -15,10 +15,10 @@ const TimePickerBooking = ({
     const options = [];
     const [openHour, openMin] = (openTime || '06:00').split(':').map(Number);
     const [closeHour, closeMin] = (closeTime || '22:00').split(':').map(Number);
-    
+
     const startMinutes = openHour * 60 + openMin;
     const endMinutes = closeHour * 60 + closeMin;
-    
+
     for (let minutes = startMinutes; minutes <= endMinutes; minutes += 30) {
       const hours = Math.floor(minutes / 60);
       const mins = minutes % 60;
@@ -29,7 +29,7 @@ const TimePickerBooking = ({
         displayLabel: `${hours.toString().padStart(2, '0')}h${mins.toString().padStart(2, '0')}`
       });
     }
-    
+
     return options;
   };
 
@@ -46,7 +46,7 @@ const TimePickerBooking = ({
 
   const duration = calculateDuration(selectedStartTime, selectedEndTime);
   const isValidDuration = duration >= 60; // Chỉ yêu cầu tối thiểu 1 giờ, không giới hạn tối đa
-  const durationWarning = duration > 0 && duration < 60 
+  const durationWarning = duration > 0 && duration < 60
     ? 'Tối thiểu 1 giờ'
     : null;
 
@@ -74,7 +74,7 @@ const TimePickerBooking = ({
           Đánh giá
         </button>
       </div>
-      
+
       <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
         {/* Start Time */}
         <div className="mb-6">
@@ -93,11 +93,10 @@ const TimePickerBooking = ({
                     onEndTimeChange('');
                   }
                 }}
-                className={`px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                  selectedStartTime === option.value
+                className={`px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${selectedStartTime === option.value
                     ? 'bg-blue-600 text-white shadow-lg scale-105'
                     : 'bg-white text-gray-700 hover:bg-blue-100 hover:border-blue-300 border-2 border-gray-200'
-                }`}
+                  }`}
               >
                 {option.label}
               </button>
@@ -122,11 +121,10 @@ const TimePickerBooking = ({
                   key={option.value}
                   type="button"
                   onClick={() => onEndTimeChange(option.value)}
-                  className={`px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                    selectedEndTime === option.value
+                  className={`px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${selectedEndTime === option.value
                       ? 'bg-green-600 text-white shadow-lg scale-105'
                       : 'bg-white text-gray-700 hover:bg-green-100 hover:border-green-300 border-2 border-gray-200'
-                  }`}
+                    }`}
                 >
                   {option.label}
                 </button>
@@ -142,19 +140,17 @@ const TimePickerBooking = ({
 
         {/* Duration Display */}
         {selectedStartTime && selectedEndTime && duration > 0 && (
-          <div className={`mb-4 p-4 rounded-lg border-2 ${
-            isValidDuration 
-              ? 'bg-white border-blue-300' 
+          <div className={`mb-4 p-4 rounded-lg border-2 ${isValidDuration
+              ? 'bg-white border-blue-300'
               : 'bg-red-50 border-red-300'
-          }`}>
+            }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-lg">timer</span>
                 <span className="text-sm font-bold text-gray-600">Thời lượng:</span>
               </div>
-              <span className={`text-lg font-black ${
-                isValidDuration ? 'text-blue-600' : 'text-red-600'
-              }`}>
+              <span className={`text-lg font-black ${isValidDuration ? 'text-blue-600' : 'text-red-600'
+                }`}>
                 {duration} phút ({(duration / 60).toFixed(1)} giờ)
               </span>
             </div>
@@ -179,12 +175,12 @@ const TimePickerBooking = ({
                 const endHour = Math.floor(endMinutes / 60);
                 const endMin = endMinutes % 60;
                 const endTime = `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
-                
+
                 // Check if end time is valid
                 const isValidEndTime = timeOptions.some(opt => opt.value === endTime);
-                
+
                 if (!isValidEndTime) return null;
-                
+
                 return (
                   <button
                     key={mins}
@@ -204,11 +200,10 @@ const TimePickerBooking = ({
         <button
           onClick={onCheckAvailability}
           disabled={!selectedStartTime || !selectedEndTime || !isValidDuration || checkingAvailability}
-          className={`w-full h-12 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
-            selectedStartTime && selectedEndTime && isValidDuration && !checkingAvailability
+          className={`w-full h-12 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${selectedStartTime && selectedEndTime && isValidDuration && !checkingAvailability
               ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
+            }`}
         >
           <span className="material-symbols-outlined">search</span>
           {checkingAvailability ? 'Đang kiểm tra...' : 'Kiểm tra khả dụng & Tính giá'}
@@ -216,23 +211,49 @@ const TimePickerBooking = ({
 
         {/* Availability Result */}
         {availabilityResult && (
-          <div className={`mt-4 p-4 rounded-lg border-2 ${
-            availabilityResult.available
-              ? 'bg-green-50 border-green-500'
-              : 'bg-red-50 border-red-500'
-          }`}>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="material-symbols-outlined text-lg">
-                {availabilityResult.available ? 'check_circle' : 'cancel'}
+          <div className={`mt-4 p-4 rounded-lg border-2 ${!availabilityResult.available ? 'bg-red-50 border-red-500' :
+              availabilityResult.softBlocked ? 'bg-amber-50 border-amber-500' :
+                'bg-green-50 border-green-500'
+            }`}>
+            <div className="flex items-start gap-2 mb-2">
+              <span className={`material-symbols-outlined text-lg mt-0.5 ${!availabilityResult.available ? 'text-red-600' :
+                  availabilityResult.softBlocked ? 'text-amber-600' :
+                    'text-green-600'
+                }`}>
+                {!availabilityResult.available ? 'cancel' :
+                  availabilityResult.softBlocked ? 'warning' : 'check_circle'}
               </span>
-              <span className="font-bold">
-                {availabilityResult.available ? '✅ Sân còn trống!' : '❌ Sân đã được đặt'}
-              </span>
+              <div>
+                <span className={`font-bold ${!availabilityResult.available ? 'text-red-700' :
+                    availabilityResult.softBlocked ? 'text-amber-700' :
+                      'text-green-700'
+                  }`}>
+                  {!availabilityResult.available ? (availabilityResult.message || '❌ Sân đã được đặt') :
+                    availabilityResult.softBlocked ? '⚠️ Có thể đặt (Lưu ý)' : '✅ Sân còn trống!'}
+                </span>
+
+                {availabilityResult.available && availabilityResult.softBlocked && (
+                  <p className="text-xs text-amber-800 mt-1 font-medium">
+                    {availabilityResult.softBlockWarning || "Khung giờ có thể bị ảnh hưởng bởi khách đang chơi, có rủi ro delay."}
+                  </p>
+                )}
+              </div>
             </div>
+
             {!availabilityResult.available && availabilityResult.conflictingBookings && (
-              <p className="text-sm text-red-700">
+              <p className="text-sm text-red-700 ml-7">
                 Có {availabilityResult.conflictingBookings.length} booking trùng giờ
               </p>
+            )}
+
+            {/* Soft Block Info */}
+            {availabilityResult.softBlockedBy && availabilityResult.softBlockedBy.length > 0 && (
+              <div className="mt-2 ml-7 p-2 bg-amber-100/50 rounded-lg text-xs text-amber-900 border border-amber-200">
+                <p className="font-bold mb-1">Chi tiết ảnh hưởng:</p>
+                {availabilityResult.softBlockedBy.map((block, idx) => (
+                  <p key={idx}>• {block.message}</p>
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -244,28 +265,28 @@ const TimePickerBooking = ({
               <span className="material-symbols-outlined text-green-600">payments</span>
               <h4 className="font-bold text-gray-900">Chi tiết giá</h4>
             </div>
-            
+
             {/* Debug: Show raw data */}
             {console.log('Price Result:', priceResult)}
-            
+
             <div className="space-y-3">
               {priceResult.breakdown && priceResult.breakdown.length > 0 ? (
                 priceResult.breakdown.map((item, idx) => {
                   console.log('Breakdown item:', item);
-                  
+
                   // Try different field names from API
                   const startTime = item.periodStart || item.startTime || item.start || '';
                   const endTime = item.periodEnd || item.endTime || item.end || '';
                   const timeRange = item.timeRange || (startTime && endTime ? `${startTime} - ${endTime}` : '');
-                  
+
                   // Duration
                   const minutes = item.durationMinutes || item.duration || item.minutes || 0;
                   const hours = item.hours || (minutes > 0 ? minutes / 60 : 0);
-                  
+
                   // Price
                   const pricePerHour = item.pricePerHour || item.hourlyRate || item.rate || 0;
                   const subtotal = item.subtotal || item.total || item.amount || 0;
-                  
+
                   return (
                     <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
                       <div className="flex justify-between items-start gap-4">
@@ -302,7 +323,7 @@ const TimePickerBooking = ({
                   <p className="text-sm">Không có chi tiết giá</p>
                 </div>
               )}
-              
+
               {/* Total */}
               <div className="pt-2">
                 <div className="flex justify-between items-center bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg p-4 shadow-lg">

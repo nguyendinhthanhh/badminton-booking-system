@@ -59,6 +59,41 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
         BadmintonCourt court = badmintonCourtMapper.toEntity(request);
         court.setStatus(CourtStatus.ACTIVE);
         court.setCreatedAt(LocalDateTime.now());
+
+        // Handle images from request list
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            java.util.Set<com.badminton.booking.entity.CourtImage> courtImages = new java.util.LinkedHashSet<>();
+            int order = 0;
+            for (String url : request.getImages()) {
+                if (url != null && !url.isBlank()) {
+                    com.badminton.booking.entity.CourtImage img = com.badminton.booking.entity.CourtImage.builder()
+                            .court(court)
+                            .imageUrl(url)
+                            .isPrimary(order == 0)
+                            .displayOrder(order++)
+                            .build();
+                    courtImages.add(img);
+                }
+            }
+            court.setImages(courtImages);
+
+            // Backward compatibility: Ensure fast access imageUrl is set
+            if (!courtImages.isEmpty() && (court.getImageUrl() == null || court.getImageUrl().isEmpty())) {
+                court.setImageUrl(courtImages.iterator().next().getImageUrl());
+            }
+        }
+        // Backward compatibility: Convert single imageUrl to CourtImage if list is
+        // empty
+        else if (court.getImageUrl() != null && !court.getImageUrl().isEmpty()) {
+            com.badminton.booking.entity.CourtImage img = com.badminton.booking.entity.CourtImage.builder()
+                    .court(court)
+                    .imageUrl(court.getImageUrl())
+                    .isPrimary(true)
+                    .displayOrder(0)
+                    .build();
+            court.setImages(new java.util.HashSet<>(java.util.Collections.singletonList(img)));
+        }
+
         BadmintonCourt savedCourt = badmintonCourtRepo.save(court);
 
         // Tự động tạo bảng giá mặc định cho sân mới
@@ -103,7 +138,7 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
     @Override
     @Transactional(readOnly = true)
     public BadmintonCourtResponse getBadmintonCourtById(Integer id) {
-        return badmintonCourtRepo.findById(id)
+        return badmintonCourtRepo.findByIdWithImages(id)
                 .map(this::toEnrichedResponseSingle)
                 .orElseThrow(() -> new RuntimeException("Badminton court not found with id: " + id));
     }
@@ -116,11 +151,51 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
     }
 
     @Override
+    @Transactional
     public void updateBadmintonCourt(Integer id, BadmintonCourtUpdateRequest request) {
-        BadmintonCourt court = badmintonCourtRepo.findById(id)
+        BadmintonCourt court = badmintonCourtRepo.findByIdWithImages(id)
                 .orElseThrow(() -> new RuntimeException("Badminton court not found with id: " + id));
+
         court.setUpdatedAt(LocalDateTime.now());
         badmintonCourtMapper.updateBadmintonCourt(court, request);
+
+        // Handle multiple images
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            // Remove existing images
+            court.getImages().clear();
+
+            // Add new images
+            for (int i = 0; i < request.getImages().size(); i++) {
+                String imgUrl = request.getImages().get(i);
+                if (imgUrl != null && !imgUrl.isBlank()) {
+                    com.badminton.booking.entity.CourtImage imageEntity = com.badminton.booking.entity.CourtImage
+                            .builder()
+                            .court(court)
+                            .imageUrl(imgUrl)
+                            .displayOrder(i)
+                            .isPrimary(i == 0)
+                            .build();
+                    court.getImages().add(imageEntity);
+                }
+            }
+            
+            // Update backward compatibility imageUrl
+            if (!court.getImages().isEmpty()) {
+                court.setImageUrl(court.getImages().iterator().next().getImageUrl());
+            }
+        } else if (request.getImageUrl() != null && !request.getImageUrl().isBlank()) {
+            // Fallback: If only imageUrl is provided, convert to CourtImage
+            court.getImages().clear();
+            com.badminton.booking.entity.CourtImage imageEntity = com.badminton.booking.entity.CourtImage
+                    .builder()
+                    .court(court)
+                    .imageUrl(request.getImageUrl())
+                    .displayOrder(0)
+                    .isPrimary(true)
+                    .build();
+            court.getImages().add(imageEntity);
+        }
+
         badmintonCourtRepo.save(court);
     }
 
@@ -158,8 +233,7 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
                 .filter(b -> b.getCourt() != null && b.getStartTime() != null && b.getEndTime() != null)
                 .collect(Collectors.groupingBy(
                         b -> b.getCourt().getId(),
-                        Collectors.summingLong(b -> Duration.between(b.getStartTime(), b.getEndTime()).toMinutes())
-                ));
+                        Collectors.summingLong(b -> Duration.between(b.getStartTime(), b.getEndTime()).toMinutes())));
     }
 
     // ===== RESPONSE BUILDERS =====
@@ -230,7 +304,21 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
                 .openTime(openTime != null ? openTime : DEFAULT_OPEN_TIME)
                 .closeTime(closeTime != null ? closeTime : DEFAULT_CLOSE_TIME)
                 .isAvailableToday(isAvailableToday)
+                .images(mapImages(court))
                 .build();
+    }
+
+    private java.util.List<String> mapImages(BadmintonCourt court) {
+        if (court.getImages() != null && !court.getImages().isEmpty()) {
+            return court.getImages().stream()
+                    .sorted(Comparator.comparingInt(com.badminton.booking.entity.CourtImage::getDisplayOrder))
+                    .map(com.badminton.booking.entity.CourtImage::getImageUrl)
+                    .collect(Collectors.toList());
+        }
+        if (court.getImageUrl() != null && !court.getImageUrl().isEmpty()) {
+            return Collections.singletonList(court.getImageUrl());
+        }
+        return new ArrayList<>();
     }
 
     // ===== AVAILABILITY CHECK =====
@@ -258,7 +346,8 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
                 .mapToLong(b -> Duration.between(b.getStartTime(), b.getEndTime()).toMinutes())
                 .sum();
 
-        LocalTime effectiveStart = (openTime != null && now.isAfter(openTime)) ? now : (openTime != null ? openTime : DEFAULT_OPEN_TIME);
+        LocalTime effectiveStart = (openTime != null && now.isAfter(openTime)) ? now
+                : (openTime != null ? openTime : DEFAULT_OPEN_TIME);
 
         if (effectiveStart.isAfter(effectiveClose)) {
             return false;
@@ -329,8 +418,8 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
             date = LocalDate.now();
         }
 
-        // 1. Lấy thông tin sân
-        BadmintonCourt court = badmintonCourtRepo.findById(courtId)
+        // 1. Lấy thông tin sân (Eager load images)
+        BadmintonCourt court = badmintonCourtRepo.findByIdWithImages(courtId)
                 .orElseThrow(() -> new RuntimeException("Badminton court not found with id: " + courtId));
 
         // 2. Lấy bảng giá (1 query)
@@ -375,7 +464,6 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
                 .max(LocalTime::compareTo)
                 .orElse(DEFAULT_CLOSE_TIME);
 
-
         // 4. Tính available slots
         List<CourtDetailResponse.AvailableSlot> availableSlots = calculateAvailableSlots(
                 openTime, closeTime, bookingsOnDate, date);
@@ -396,6 +484,7 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
                 .location(court.getLocation())
                 .description(court.getDescription())
                 .imageUrl(court.getImageUrl())
+                .images(mapImages(court))
                 .capacity(court.getCapacity())
                 .minPricePerHour(minPrice)
                 .maxPricePerHour(maxPrice)
@@ -453,14 +542,21 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
     }
 
     private String getPeriodName(LocalTime time) {
-        if (time == null) return "Ngoài giờ";
+        if (time == null)
+            return "Ngoài giờ";
         int hour = time.getHour();
-        if (hour >= 6 && hour < 8) return "Sáng sớm";
-        if (hour >= 8 && hour < 11) return "Sáng";
-        if (hour >= 11 && hour < 14) return "Trưa";
-        if (hour >= 14 && hour < 17) return "Chiều";
-        if (hour >= 17 && hour < 21) return "Giờ vàng";
-        if (hour >= 21 && hour < 22) return "Tối muộn";
+        if (hour >= 6 && hour < 8)
+            return "Sáng sớm";
+        if (hour >= 8 && hour < 11)
+            return "Sáng";
+        if (hour >= 11 && hour < 14)
+            return "Trưa";
+        if (hour >= 14 && hour < 17)
+            return "Chiều";
+        if (hour >= 17 && hour < 21)
+            return "Giờ vàng";
+        if (hour >= 21 && hour < 22)
+            return "Tối muộn";
         return "Ngoài giờ";
     }
 
@@ -523,5 +619,58 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
         }
 
         return slots;
+    }
+
+    // ===== FILTER COURTS =====
+
+    @Override
+    @Transactional(readOnly = true)
+    public Slice<BadmintonCourtResponse> filterCourts(
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            List<com.badminton.booking.entity.enums.CourtType> types,
+            com.badminton.booking.entity.enums.CourtStatus status,
+            int page,
+            int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Use default status if not provided
+        if (status == null) {
+            status = CourtStatus.ACTIVE;
+        }
+
+        // Build specification using CourtSpecification
+        com.badminton.booking.specification.CourtSpecification spec = new com.badminton.booking.specification.CourtSpecification();
+        org.springframework.data.jpa.domain.Specification<BadmintonCourt> filterSpec = com.badminton.booking.specification.CourtSpecification
+                .buildFilterSpec(types, status, minPrice, maxPrice);
+
+        // Query with specification
+        Slice<BadmintonCourt> filteredCourts = badmintonCourtRepo.findAll(filterSpec, pageable);
+
+        if (filteredCourts.isEmpty()) {
+            return new SliceImpl<>(Collections.emptyList(), pageable, false);
+        }
+
+        // ===== TỐI ƯU: Tái sử dụng bulk optimization giống getAllBadmintonCourts =====
+        List<BadmintonCourt> courts = filteredCourts.getContent();
+        List<Integer> courtIds = courts.stream().map(BadmintonCourt::getId).collect(Collectors.toList());
+
+        // Query 1: Lấy price summary
+        Map<Integer, CourtPriceSummary> priceSummaryMap = getPriceSummaryMap(courtIds);
+
+        // Query 2: Lấy booking summary
+        LocalDate today = LocalDate.now();
+        Map<Integer, Long> bookedMinutesMap = getBookedMinutesMap(today);
+
+        // Build response
+        LocalTime now = LocalTime.now();
+        List<BadmintonCourtResponse> enrichedList = courts.stream()
+                .map(court -> toEnrichedResponseBulk(court, priceSummaryMap, bookedMinutesMap, now))
+                .collect(Collectors.toList());
+
+        log.debug("filterCourts: {} courts loaded with specification + 3 bulk queries", courts.size());
+
+        return new SliceImpl<>(enrichedList, pageable, filteredCourts.hasNext());
     }
 }

@@ -45,10 +45,12 @@ const AuthPage = () => {
                 const user = await handleLogin(formData.username, formData.password);
 
                 // Navigate immediately based on role
+                // Navigate based on role or return to previous page
                 if (user.roleName === 'ADMIN') {
                     navigate('/admin');
                 } else {
-                    navigate('/');
+                    const from = location.state?.from || '/';
+                    navigate(from);
                 }
             } else {
                 if (formData.password !== formData.confirmPassword) {
@@ -119,11 +121,11 @@ const AuthPage = () => {
                                 {/* Email/Phone Field */}
                                 <label className="flex flex-col gap-2">
                                     <span className="text-[#111318] dark:text-gray-200 text-sm font-medium">
-                                        Email hoặc tên đăng nhập
+                                        Tên đăng nhập
                                     </span>
                                     <input
                                         className="w-full rounded-lg border border-[#dbdee6] dark:border-gray-600 bg-white dark:bg-gray-800 text-[#111318] dark:text-white h-12 px-4 text-base focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-[#616e89] dark:placeholder:text-gray-500"
-                                        placeholder="example@email.com"
+                                        placeholder="Tên đăng nhập"
                                         type="text"
                                         value={formData.username}
                                         onChange={(e) => handleInputChange("username", e.target.value)}

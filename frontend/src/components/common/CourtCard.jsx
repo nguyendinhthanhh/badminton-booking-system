@@ -1,139 +1,225 @@
+import { useState } from 'react';
+
 const CourtCard = ({ court, onViewDetails, onBookNow }) => {
   const defaultCourtImage = 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800';
-  
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Prepare images list (using fallback if empty)
+  // TODO: Remove mock images when backend data is ready
+  const demoImages = [
+    court.imageUrl || defaultCourtImage,
+    'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800',
+    'https://plus.unsplash.com/premium_photo-1676634832558-6654a134e920?w=800'
+  ];
+  const images = (court.images && court.images.length > 0) ? court.images : demoImages;
+  const currentImage = images[currentImageIndex];
+
   const courtId = court.id;
   const courtName = court.name;
   const isAvailable = court.status === 'ACTIVE' && court.isAvailableToday;
   const courtType = court.type === 'SINGLE' ? 'Sân đơn' : court.type === 'DOUBLE' ? 'Sân đôi' : 'Sân VIP';
-  const typeColor = court.type === 'SINGLE' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 
-                   court.type === 'DOUBLE' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
-                   'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN').format(price) + 'đ';
+  // Sport-inspired accent colors
+  const getAccentColor = () => {
+    switch (court.type) {
+      case 'SINGLE':
+        return {
+          primary: 'bg-blue-600',
+          text: 'text-blue-600',
+          border: 'border-blue-600',
+          hover: 'hover:bg-blue-700',
+          light: 'bg-blue-50',
+          darkBg: 'dark:bg-blue-900/20'
+        };
+      case 'DOUBLE':
+        return {
+          primary: 'bg-green-600',
+          text: 'text-green-600',
+          border: 'border-green-600',
+          hover: 'hover:bg-green-700',
+          light: 'bg-green-50',
+          darkBg: 'dark:bg-green-900/20'
+        };
+      default: // VIP
+        return {
+          primary: 'bg-amber-600',
+          text: 'text-amber-600',
+          border: 'border-amber-600',
+          hover: 'hover:bg-amber-700',
+          light: 'bg-amber-50',
+          darkBg: 'dark:bg-amber-900/20'
+        };
+    }
   };
 
+  const color = getAccentColor();
+
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  // Preload next image logic could be added here
+
   return (
-    <div className="group bg-white dark:bg-surface-dark rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:border-primary/30">
-      {/* Image */}
-      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
+    <div
+      className="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 hover:shadow-lg cursor-pointer"
+      onClick={() => onViewDetails(courtId)}
+    >
+      {/* Image Section */}
+      <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-gray-700 group/image">
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        )}
+
         <img
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-          src={court.imageUrl || defaultCourtImage}
-          alt={courtName}
+          className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+          src={currentImage}
+          alt={`${courtName} - ${currentImageIndex + 1}`}
+          onLoad={() => setImageLoaded(true)}
           onError={(e) => {
             e.target.src = defaultCourtImage;
+            setImageLoaded(true);
           }}
         />
-        {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-        
-        {/* Status Badge */}
-        <div className={`absolute top-3 left-3 ${isAvailable ? 'bg-green-500' : 'bg-red-500'} text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5`}>
-          <span className={`w-1.5 h-1.5 rounded-full bg-white ${isAvailable ? 'animate-pulse' : ''}`}></span>
-          {isAvailable ? 'Còn trống' : 'Hết sân'}
+
+        {/* Carousel Controls - Only visible on hover and if multiple images */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePrevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-sm opacity-0 group-hover/image:opacity-100 transition-opacity transform hover:scale-110"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_left</span>
+            </button>
+            <button
+              onClick={handleNextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-sm opacity-0 group-hover/image:opacity-100 transition-opacity transform hover:scale-110"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_right</span>
+            </button>
+            {/* Dots Indicator */}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover/image:opacity-100 transition-opacity">
+              {images.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`w-1.5 h-1.5 rounded-full shadow-sm transition-colors ${idx === currentImageIndex ? 'bg-white' : 'bg-white/50'}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Simple gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+
+        {/* Status Badge - Clean & Simple */}
+        <div className="absolute top-3 left-3 z-10">
+          {court.status === 'ACTIVE' ? (
+            isAvailable ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-green-500 text-white text-xs font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                Còn trống
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-500 text-white text-xs font-bold">
+                <span className="material-symbols-outlined text-sm">close</span>
+                Hết sân
+              </div>
+            )
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-500 text-white text-xs font-bold">
+              <span className="material-symbols-outlined text-sm">lock</span>
+              Tạm ngưng
+            </div>
+          )}
         </div>
 
         {/* Court Type Badge */}
-        <div className={`absolute top-3 right-3 ${typeColor} text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm`}>
-          {courtType}
+        <div className="absolute top-3 right-3 z-10">
+          <div className={`px-3 py-1.5 rounded-md ${color.primary} text-white text-xs font-bold uppercase tracking-wide`}>
+            {courtType}
+          </div>
         </div>
-
-        {/* Favorite */}
-        <button className="absolute bottom-3 right-3 size-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-white transition-all shadow-lg">
-          <span className="material-symbols-outlined text-[20px]">favorite_border</span>
-        </button>
       </div>
 
-      {/* Content */}
-      <div className="p-5">
-        {/* Title & Location */}
+      {/* Content Section */}
+      <div className="p-4">
+        {/* Court Name & Location */}
         <div className="mb-4">
-          <h3 className="text-lg font-bold text-[#111318] dark:text-white mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1 line-clamp-1">
             {courtName}
           </h3>
-          <div className="flex items-center gap-1.5 text-[#616e89] dark:text-gray-400 text-sm">
-            <span className="material-symbols-outlined text-[16px]">location_on</span>
+          <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-sm">
+            <span className="material-symbols-outlined text-base">location_on</span>
             <span className="line-clamp-1">{court.location || 'Chưa cập nhật'}</span>
           </div>
         </div>
 
-        {/* Description */}
-        {court.description && (
-          <p className="text-sm text-[#616e89] dark:text-gray-400 mb-4 line-clamp-2">
-            {court.description}
-          </p>
-        )}
-
-        {/* Info Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
-          {/* Capacity */}
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5">
-            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[18px] text-primary">groups</span>
+        {/* Info Row - Horizontal & Clean */}
+        <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2">
+            <div className={`w-9 h-9 rounded-lg ${color.light} ${color.darkBg} ${color.text} flex items-center justify-center`}>
+              <span className="material-symbols-outlined text-lg">group</span>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-[#616e89] dark:text-gray-400 uppercase font-medium">Sức chứa</span>
-              <span className="text-sm font-bold text-[#111318] dark:text-white">{court.capacity || 4} người</span>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Sức chứa</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">{court.capacity || 4} người</p>
             </div>
           </div>
 
-          {/* Operating Hours */}
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5">
-            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[18px] text-primary">schedule</span>
+          <div className="w-px h-10 bg-gray-200 dark:bg-gray-700" />
+
+          <div className="flex items-center gap-2">
+            <div className={`w-9 h-9 rounded-lg ${color.light} ${color.darkBg} ${color.text} flex items-center justify-center`}>
+              <span className="material-symbols-outlined text-lg">schedule</span>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-[#616e89] dark:text-gray-400 uppercase font-medium">Giờ mở cửa</span>
-              <span className="text-sm font-bold text-[#111318] dark:text-white">{court.openTime}-{court.closeTime}</span>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Giờ hoạt động</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">{court.openTime?.slice(0, 5)} - {court.closeTime?.slice(0, 5)}</p>
             </div>
           </div>
         </div>
 
-        {/* Price Section */}
-        <div className="mb-4">
-          <p className="text-[10px] text-[#616e89] dark:text-gray-400 uppercase font-medium mb-1.5">Giá thuê</p>
-          {court.minPricePerHour && court.maxPricePerHour ? (
-            <div className="flex items-baseline gap-2">
-              <p className="text-primary font-bold text-xl">
-                {formatPrice(court.minPricePerHour)}
-              </p>
-              <span className="text-[#616e89] dark:text-gray-400 text-sm">-</span>
-              <p className="text-primary font-bold text-xl">
-                {formatPrice(court.maxPricePerHour)}
-              </p>
-              <span className="text-sm text-[#616e89] dark:text-gray-400 font-normal">/giờ</span>
-            </div>
-          ) : (
-            <p className="text-[#616e89] dark:text-gray-400 text-sm italic">
-              Liên hệ để biết giá
-            </p>
-          )}
-        </div>
+        {/* Price & Action - Full Width Button */}
+        <div className="space-y-3">
+          {/* Price Display */}
+          <div className="flex items-baseline gap-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Giá:</span>
+            {court.minPricePerHour ? (
+              <div className="flex items-baseline gap-1">
+                <span className={`text-2xl font-black ${color.text}`}>
+                  {new Intl.NumberFormat('vi-VN').format(court.minPricePerHour)}
+                </span>
+                <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">đ/giờ</span>
+              </div>
+            ) : (
+              <span className="text-lg font-bold text-gray-500">Liên hệ</span>
+            )}
+          </div>
 
-        {/* Actions */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => onViewDetails(courtId)}
-            className="flex-[0.8] h-11 rounded-xl border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center gap-1.5 text-[#111318] dark:text-white hover:border-primary hover:bg-primary/5 transition-all text-sm font-semibold"
-          >
-            <span className="material-symbols-outlined text-[18px]">visibility</span>
-            <span>Chi tiết</span>
-          </button>
-          {isAvailable ? (
+          {/* Full Width Button */}
+          {court.status === 'ACTIVE' ? (
             <button
-              onClick={() => onBookNow(courtId)}
-              className="flex-1 h-11 rounded-xl bg-gradient-to-r from-primary to-primary-hover hover:shadow-lg hover:shadow-primary/30 text-white text-sm font-bold transition-all flex items-center justify-center gap-1.5 group/btn"
+              onClick={(e) => { e.stopPropagation(); onViewDetails(courtId); }}
+              className={`w-full ${color.primary} ${color.hover} text-white font-bold text-sm py-3 px-4 rounded-lg transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm hover:shadow-md`}
             >
-              <span>Đặt ngay</span>
-              <span className="material-symbols-outlined text-[18px] group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
+              <span>Xem chi tiết</span>
+              <span className="material-symbols-outlined text-lg">arrow_forward</span>
             </button>
           ) : (
             <button
               disabled
-              className="flex-1 h-11 rounded-xl bg-gray-200 dark:bg-gray-700 text-[#616e89] dark:text-gray-400 text-sm font-bold cursor-not-allowed"
+              className="w-full bg-gray-200 dark:bg-gray-700 text-gray-400 font-bold text-sm py-3 px-4 rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Không khả dụng
+              <span className="material-symbols-outlined text-lg">lock</span>
+              <span>Tạm ngưng</span>
             </button>
           )}
         </div>

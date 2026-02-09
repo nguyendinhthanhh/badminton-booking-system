@@ -1,6 +1,7 @@
 package com.badminton.booking.controller;
 
 import com.badminton.booking.dto.request.LoginRequest;
+import com.badminton.booking.dto.request.RefreshTokenRequest;
 import com.badminton.booking.dto.response.AuthResponse;
 import com.badminton.booking.dto.request.RegisterRequest;
 import com.badminton.booking.security.AuthService;
@@ -27,5 +28,15 @@ public class AuthController {
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
         AuthResponse resp = authService.login(req);
         return ResponseEntity.ok(resp);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest req) {
+        try {
+            AuthResponse resp = authService.refreshToken(req.getRefreshToken());
+            return ResponseEntity.ok(resp);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body(e.getMessage());
+        }
     }
 }

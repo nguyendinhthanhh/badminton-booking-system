@@ -1,14 +1,18 @@
 // CourtDetails - Booking Integration v2.5.1 (Fixed)
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useMemo, useRef } from "react";
+import useAuthStore from "../../store/useAuthStore";
 import courtService from "../../services/courtService";
 import bookingService from "../../services/bookingService";
 import courtPriceService from "../../services/courtPriceService";
+import paymentService from "../../services/paymentService";
 import Toast from "../../components/common/Toast";
 import CourtAvailability from "../../components/common/CourtAvailability";
 import TimePickerBooking from "../../components/common/TimePickerBooking";
 import CourtDetailSkeleton from "../../components/common/CourtDetailSkeleton";
 import TimelineSkeleton from "../../components/common/TimelineSkeleton";
+import PaymentModal from "../../components/customer/PaymentModal";
+import LoginRequiredModal from "../../components/common/LoginRequiredModal";
 // If you don't have these 2 files, comment them out and use simple <div>Loading...</div>
 // import PriceTableSkeleton from "../../components/common/PriceTableSkeleton"; 
 // import CourtAvailabilitySkeleton from "../../components/common/CourtAvailabilitySkeleton"; 
@@ -18,15 +22,19 @@ console.log("🔄 CourtDetails loaded - Booking integration active");
 const CourtDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+  const location = useLocation();
+
   // State definitions
   const [court, setCourt] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   // eslint-disable-next-line no-unused-vars
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pendingBooking, setPendingBooking] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -41,44 +49,64 @@ const CourtDetails = () => {
   // Refs
   const timelineRef = useRef(null);
   const amenitiesRef = useRef(null);
+  const isInitialMount = useRef(true);
 
   // --- 1. INITIAL LOAD ---
   useEffect(() => {
+    let ignore = false;
+
     const initializePage = async () => {
       try {
         setLoading(true);
         // Fetch Court Info
         const courtData = await courtService.getCourtById(id);
+        if (ignore) return;
         setCourt(courtData);
-        
+
         // Fetch Prices
         setLoadingPrices(true);
         const pricesData = await courtPriceService.getPricesByCourtId(id);
+        if (ignore) return;
+
         const activePrices = pricesData.filter((p) => p.isActive);
         setCourtPrices(activePrices);
         setLoadingPrices(false);
 
+        // Fetch initial slots in the same sequence
+        if (!ignore) {
+          await fetchAvailableSlotsAndBookings();
+        }
+
       } catch (err) {
-        setError("Không thể tải thông tin sân. Vui lòng thử lại sau.");
-        console.error("Initialization error:", err);
+        if (!ignore) {
+          setError("Không thể tải thông tin sân. Vui lòng thử lại sau.");
+          console.error("Initialization error:", err);
+        }
       } finally {
-        setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+          isInitialMount.current = false; // Mark as initialized
+        }
       }
     };
     initializePage();
+
+    return () => {
+      ignore = true;
+    };
   }, [id]);
 
   // --- 2. DATE CHANGE EFFECT ---
   useEffect(() => {
+    // Skip if it's the first render (initially handled by initializePage)
+    if (isInitialMount.current) return;
+
     if (court) {
-      // Fetch details specific to date (if API exists)
-      // fetchCourtDetailByDate(); // Only if you use this separate API
-      
       // Fetch availability
       fetchAvailableSlotsAndBookings();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, court]); 
+  }, [selectedDate]);
 
   const fetchAvailableSlotsAndBookings = async () => {
     try {
@@ -151,11 +179,11 @@ const CourtDetails = () => {
   // --- HANDLERS ---
   const handleCheckAvailability = async () => {
     if (!selectedStartTime || !selectedEndTime) return;
-    
+
     const duration = calculateDuration(selectedStartTime, selectedEndTime);
     if (duration <= 0) {
-       showToast("Giờ kết thúc phải lớn hơn giờ bắt đầu", "error");
-       return;
+      showToast("Giờ kết thúc phải lớn hơn giờ bắt đầu", "error");
+      return;
     }
     if (duration < 60) {
       showToast("Thời lượng đặt sân tối thiểu 1 giờ (60 phút)", "error");
@@ -186,11 +214,14 @@ const CourtDetails = () => {
         setPriceResult(priceData);
       }
     } catch (error) {
+      console.error("Check availability error:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
         "Lỗi khi kiểm tra khả dụng";
+
       showToast(errorMessage, "error");
+
       setAvailabilityResult({
         available: false,
         message: errorMessage,
@@ -200,7 +231,15 @@ const CourtDetails = () => {
     }
   };
 
+  const { user } = useAuthStore(); // Get user from store
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
   const handleBooking = async () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
     if (!selectedStartTime || !selectedEndTime) {
       showToast("Vui lòng chọn giờ bắt đầu và kết thúc", "error");
       return;
@@ -211,45 +250,82 @@ const CourtDetails = () => {
       return;
     }
 
-    // TODO: Get real userId from Auth Context
-    const userId = 1;
+    // Hiển thị Payment Modal TRƯỚC khi tạo booking
+    // Lưu thông tin booking để tạo sau khi thanh toán
+    const bookingData = {
+      courtId: parseInt(id),
+      playDate: formatDateString(selectedDate),
+      startTime: selectedStartTime,
+      endTime: selectedEndTime,
+      notes: `Đặt sân từ ${selectedStartTime} đến ${selectedEndTime}`,
+      totalPrice: priceResult?.totalPrice || 0,
+      depositAmount: Math.round((priceResult?.totalPrice || 0) / 3), // 1/3 deposit
+    };
+
+    setPendingBooking(bookingData);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = async (paymentMethod) => {
+    // Bây giờ mới tạo booking sau khi thanh toán
+    const userId = 1; // TODO: Get from Auth Context
 
     try {
       setBookingInProgress(true);
+
       const bookingData = {
-        courtId: parseInt(id),
-        playDate: formatDateString(selectedDate),
-        startTime: selectedStartTime,
-        endTime: selectedEndTime,
-        notes: `Đặt sân từ ${selectedStartTime} đến ${selectedEndTime}`,
+        courtId: pendingBooking.courtId,
+        playDate: pendingBooking.playDate,
+        startTime: pendingBooking.startTime,
+        endTime: pendingBooking.endTime,
+        notes: pendingBooking.notes,
       };
 
+      console.log('📝 Creating booking with data:', bookingData);
       const response = await bookingService.createBooking(userId, bookingData);
-      showToast(
-        `Đặt sân thành công! Mã booking: #${response.bookingId || '...'}`,
-        "success",
-      );
+      console.log('✅ Booking created:', response);
+
+      // Sau khi tạo booking, gọi API thanh toán deposit
+      const depositPaymentData = {
+        bookingId: response.bookingId, // Backend trả về bookingId, không phải id
+        paymentMethod: paymentMethod,
+        notes: `Thanh toán deposit qua ${paymentMethod}`
+      };
+
+      console.log('💳 Paying deposit with data:', depositPaymentData);
+      await paymentService.payDeposit(depositPaymentData);
+      console.log('✅ Deposit paid successfully');
+
+      setShowPaymentModal(false);
+      setPendingBooking(null);
 
       // Reset states
       setSelectedStartTime("");
       setSelectedEndTime("");
       setAvailabilityResult(null);
       setPriceResult(null);
-      
+
       // Refresh Data
       fetchAvailableSlotsAndBookings();
-      
-      // Redirect
+
+      showToast("Thanh toán thành công! Vui lòng check-in đúng giờ.", "success");
+
+      // Redirect to my bookings
       setTimeout(() => {
-        navigate("/bookings"); // Or /my-bookings depending on your route
+        navigate("/my-bookings");
       }, 1500);
+
     } catch (error) {
-      console.error("Booking Error", error);
+      console.error("Booking/Payment Error", error);
+      console.error("Error response:", error.response?.data);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
-        "Đặt sân thất bại. Vui lòng thử lại.";
+        "Đặt sân hoặc thanh toán thất bại. Vui lòng thử lại.";
       showToast(errorMessage, "error");
+
+      setShowPaymentModal(false);
+      setPendingBooking(null);
     } finally {
       setBookingInProgress(false);
     }
@@ -257,7 +333,7 @@ const CourtDetails = () => {
 
   // --- MEMOIZED DATA ---
   const priceGroups = useMemo(() => getGroupedPrices(), [courtPrices, selectedDate]);
-  
+
   const getDayName = (date) => {
     const days = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
     return days[date.getDay()];
@@ -330,11 +406,11 @@ const CourtDetails = () => {
       <div className="px-6 py-8 bg-[#f9fafb]">
         <div className="max-w-[1600px] mx-auto">
           <div className="flex gap-6 items-start relative">
-            
+
             {/* --- LEFT COLUMN: DATE & PRICE (STICKY) --- */}
             <div className="w-[280px] flex-shrink-0 sticky top-24 h-fit z-10">
               <div className="space-y-6">
-                
+
                 {/* 1. Date Selection */}
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                   <div className="bg-gray-50/80 backdrop-blur-sm border-b border-gray-100 p-4 flex items-center gap-3">
@@ -356,10 +432,10 @@ const CourtDetails = () => {
                             key={idx}
                             onClick={() => setSelectedDate(date)}
                             className={`relative flex flex-col items-center justify-center h-[60px] rounded-xl transition-all duration-200 border
-                                ${isActive 
-                                  ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200/50 scale-105 z-10" 
-                                  : "bg-white border-gray-100 text-gray-500 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600"
-                                }
+                                ${isActive
+                                ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200/50 scale-105 z-10"
+                                : "bg-white border-gray-100 text-gray-500 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600"
+                              }
                             `}
                           >
                             {isToday && !isActive && (
@@ -514,45 +590,178 @@ const CourtDetails = () => {
             <div className="flex-1 min-w-0 flex flex-col gap-6">
               {/* Gallery */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                <div className="w-full aspect-[16/9] rounded-xl overflow-hidden relative group mb-3 bg-gray-100">
-                  <img
-                    src={court.imageUrl || "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800"}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    alt={court.name}
-                  />
-                  <div className="absolute top-3 left-3">
-                    <span className="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-lg">
-                      <span className="size-2 bg-white rounded-full animate-pulse"></span> Đang hoạt động
-                    </span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-5 gap-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="aspect-square rounded-lg overflow-hidden border border-gray-200">
-                      <img src={`https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=200&h=200&fit=crop&q=80`} className="w-full h-full object-cover" alt="thumb" />
-                    </div>
-                  ))}
-                  <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200">
-                    <span className="text-xs font-bold text-gray-500">+12 ảnh</span>
-                  </div>
-                </div>
+                {(() => {
+                  const images = (court.images && court.images.length > 0)
+                    ? court.images
+                    : [court.imageUrl || "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800"];
+                  const currentImage = images[currentImageIndex] || images[0];
+
+                  return (
+                    <>
+                      <div className="w-full aspect-[16/9] rounded-xl overflow-hidden relative group mb-3 bg-gray-100">
+                        <img
+                          src={currentImage}
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                          alt={`${court.name} - Image ${currentImageIndex + 1}`}
+                          onError={(e) => {
+                            e.target.src = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800";
+                          }}
+                        />
+
+                        {/* Status Badge */}
+                        <div className="absolute top-3 left-3">
+                          {court?.status === 'ACTIVE' ? (
+                            <span className="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-lg">
+                              <span className="size-2 bg-white rounded-full animate-pulse"></span> Đang hoạt động
+                            </span>
+                          ) : (
+                            <span className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-lg">
+                              <span className="material-symbols-outlined text-[14px]">block</span> Tạm ngưng
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Navigation Arrows (only if multiple images) */}
+                        {images.length > 1 && (
+                          <>
+                            <button
+                              onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 size-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <span className="material-symbols-outlined text-gray-800">chevron_left</span>
+                            </button>
+                            <button
+                              onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 size-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <span className="material-symbols-outlined text-gray-800">chevron_right</span>
+                            </button>
+
+                            {/* Image Counter */}
+                            <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs font-bold px-2 py-1 rounded-lg">
+                              {currentImageIndex + 1} / {images.length}
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Thumbnails */}
+                      {images.length > 1 && (
+                        <div className="grid grid-cols-5 gap-2">
+                          {images.slice(0, 5).map((img, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => setCurrentImageIndex(idx)}
+                              className={`aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${idx === currentImageIndex
+                                ? "border-blue-500 ring-2 ring-blue-200"
+                                : "border-gray-200 hover:border-blue-300"
+                                }`}
+                            >
+                              <img
+                                src={img}
+                                className="w-full h-full object-cover"
+                                alt={`Thumbnail ${idx + 1}`}
+                                onError={(e) => {
+                                  e.target.src = "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=200";
+                                }}
+                              />
+                            </div>
+                          ))}
+                          {images.length > 5 && (
+                            <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                              <span className="text-xs font-bold text-gray-500">+{images.length - 5}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
-              {/* Timeline */}
+              {/* Court Information */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                <h3 className="text-base font-black text-gray-900 mb-4">Thông tin sân</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
+                    <div className="size-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <span className="material-symbols-outlined text-blue-600">category</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Loại sân</p>
+                      <p className="text-sm font-bold text-gray-900">{court.type || 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl">
+                    <div className="size-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <span className="material-symbols-outlined text-green-600">group</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Sức chứa</p>
+                      <p className="text-sm font-bold text-gray-900">{court.capacity || 'N/A'} người</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl">
+                    <div className="size-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <span className="material-symbols-outlined text-orange-600">schedule</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Giờ mở cửa</p>
+                      <p className="text-sm font-bold text-gray-900">{court.openTime || '06:00'} - {court.closeTime || '22:00'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-xl">
+                    <div className="size-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <span className="material-symbols-outlined text-purple-600">payments</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Giá</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {court.minPricePerHour?.toLocaleString('vi-VN') || 'N/A'}đ - {court.maxPricePerHour?.toLocaleString('vi-VN') || 'N/A'}đ
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {court.description && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Mô tả</p>
+                    <p className="text-sm text-gray-700 leading-relaxed">{court.description}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Timeline with Integrated Booking */}
               <div ref={timelineRef}>
                 {loadingSlots ? (
-                  <TimelineSkeleton /> // Use correct imported Skeleton
+                  <TimelineSkeleton />
                 ) : (
                   <CourtAvailability
                     availableSlots={availableSlots}
                     openTime={court?.openTime}
                     closeTime={court?.closeTime}
+                    selectedDate={formatDateString(selectedDate)}
+                    // Booking props
+                    selectedStartTime={selectedStartTime}
+                    selectedEndTime={selectedEndTime}
+                    onStartTimeChange={setSelectedStartTime}
+                    onEndTimeChange={setSelectedEndTime}
+                    onCheckAvailability={handleCheckAvailability}
+                    checkingAvailability={checkingAvailability}
+                    availabilityResult={availabilityResult}
+                    priceResult={priceResult}
+                    onBooking={handleBooking}
+                    bookingInProgress={bookingInProgress}
+                    courtStatus={court?.status}
                   />
                 )}
               </div>
 
-              {/* Time Picker */}
-              <TimePickerBooking
+              {/* Time Picker - Now integrated into CourtAvailability above */}
+              {/* <TimePickerBooking
                 selectedStartTime={selectedStartTime}
                 selectedEndTime={selectedEndTime}
                 onStartTimeChange={setSelectedStartTime}
@@ -563,7 +772,7 @@ const CourtDetails = () => {
                 priceResult={priceResult}
                 openTime={court?.openTime}
                 closeTime={court?.closeTime}
-              />
+              /> */}
 
               {/* Amenities */}
               <div ref={amenitiesRef} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
@@ -632,13 +841,31 @@ const CourtDetails = () => {
                     </div>
 
                     {availabilityResult && (
-                      <div className={`flex items-center gap-3 p-3 rounded-xl border ${availabilityResult.available ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
-                        <span className={`material-symbols-outlined ${availabilityResult.available ? "text-green-600" : "text-red-600"}`}>
-                          {availabilityResult.available ? "check_circle" : "cancel"}
+                      <div className={`flex items-start gap-3 p-3 rounded-xl border ${!availabilityResult.available ? "bg-red-50 border-red-200" :
+                        availabilityResult.softBlocked ? "bg-amber-50 border-amber-200" :
+                          "bg-green-50 border-green-200"
+                        }`}>
+                        <span className={`material-symbols-outlined text-lg mt-0.5 ${!availabilityResult.available ? "text-red-600" :
+                          availabilityResult.softBlocked ? "text-amber-600" :
+                            "text-green-600"
+                          }`}>
+                          {!availabilityResult.available ? "cancel" :
+                            availabilityResult.softBlocked ? "warning" : "check_circle"}
                         </span>
-                        <span className={`text-xs font-bold ${availabilityResult.available ? "text-green-700" : "text-red-700"}`}>
-                          {availabilityResult.available ? "Còn trống!" : availabilityResult.message || "Đã kín"}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className={`text-xs font-bold ${!availabilityResult.available ? "text-red-700" :
+                            availabilityResult.softBlocked ? "text-amber-700" :
+                              "text-green-700"
+                            }`}>
+                            {!availabilityResult.available ? (availabilityResult.message || "Đã kín") :
+                              availabilityResult.softBlocked ? "Có thể đặt (Lưu ý)" : "Còn trống!"}
+                          </span>
+                          {availabilityResult.available && availabilityResult.softBlocked && (
+                            <span className="text-[10px] text-amber-600 leading-tight mt-1 font-medium">
+                              {availabilityResult.softBlockWarning || "Khung giờ có thể bị ảnh hưởng bởi khách đang chơi."}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -647,32 +874,27 @@ const CourtDetails = () => {
                     <div className="border-t border-dashed border-gray-200 pt-4 mb-4">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm font-bold text-gray-900">Tổng cộng</span>
-                        <span className="text-xl font-black text-blue-600">{(priceResult.totalPrice + 10000).toLocaleString()}đ</span>
+                        <span className="text-xl font-black text-blue-600">{(priceResult.totalPrice).toLocaleString()}đ</span>
                       </div>
-                      <p className="text-[10px] text-gray-400 text-right">Đã bao gồm phí dịch vụ</p>
                     </div>
                   )}
 
                   <button
                     disabled={!availabilityResult?.available || bookingInProgress}
                     onClick={handleBooking}
-                    className={`w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-black transition-all shadow-lg ${
-                      availabilityResult?.available && !bookingInProgress
-                        ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-blue-200 transform active:scale-95"
-                        : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
-                    }`}
+                    className={`w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-black transition-all shadow-lg ${availabilityResult?.available && !bookingInProgress
+                      ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-blue-200 transform active:scale-95"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                      }`}
                   >
                     {bookingInProgress ? (
                       <><span className="animate-spin material-symbols-outlined text-lg">progress_activity</span> Đang xử lý...</>
                     ) : (
-                      <><span className="material-symbols-outlined text-lg">shopping_cart</span> Tiếp tục đặt sân</>
+                      <><span className="material-symbols-outlined text-lg">payment</span> Thanh toán để đặt sân</>
                     )}
                   </button>
 
-                  <div className="mt-4 flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
-                    <span className="material-symbols-outlined text-amber-600 text-base">info</span>
-                    <p className="text-[10px] font-medium text-amber-800 leading-relaxed">Huỷ miễn phí trước 24h.</p>
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -684,6 +906,24 @@ const CourtDetails = () => {
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        booking={pendingBooking}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setPendingBooking(null);
+        }}
+        onSuccess={handlePaymentSuccess}
+      />
+
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLogin={() => navigate('/login', { state: { from: location.pathname } })}
+        message="Vui lòng đăng nhập để tiếp tục đặt sân."
+      />
 
       {/* Toast */}
       {toast.show && (
