@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Update Booking Status API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input, select {
+            width: 100%;
+            max-width: 500px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Update Booking Status API</h1>
+        
+        <div class="form-group">
+            <button onclick="getTokenFromLocalStorage()" style="background: #28a745;">Get Token from LocalStorage</button>
+            <button onclick="testLogin()" style="background: #17a2b8;">Test Login (admin/admin123)</button>
+        </div>
+        
+        <div class="form-group">
+            <label>Token:</label>
+            <input type="text" id="token" placeholder="Bearer token">
+        </div>
+        
+        <div class="form-group">
+            <label>Booking ID:</label>
+            <input type="number" id="bookingId" placeholder="1" value="5">
+        </div>
+        
+        <div class="form-group">
+            <label>New Status:</label>
+            <select id="status">
+                <option value="PENDING">PENDING</option>
+                <option value="CONFIRMED" selected>CONFIRMED</option>
+                <option value="PLAYING">PLAYING</option>
+                <option value="COMPLETED">COMPLETED</option>
+                <option value="CANCELLED">CANCELLED</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>HTTP Method:</label>
+            <select id="method">
+                <option value="PATCH">PATCH</option>
+                <option value="PUT">PUT</option>
+                <option value="POST">POST</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>API Endpoint:</label>
+            <select id="endpoint">
+                <option value="/api/bookings/{id}/status">/api/bookings/{id}/status</option>
+                <option value="/api/admin/bookings/{id}/status">/api/admin/bookings/{id}/status</option>
+            </select>
+        </div>
+        
+        <button onclick="updateStatus()">Update Status</button>
+        <button onclick="clearResult()" style="background: #6c757d;">Clear</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        function getTokenFromLocalStorage() {
+            try {
+                const authStore = localStorage.getItem('auth-storage');
+                if (authStore) {
+                    const parsed = JSON.parse(authStore);
+                    const token = parsed.state?.accessToken;
+                    if (token) {
+                        document.getElementById('token').value = token;
+                        document.getElementById('result').textContent = 'Token loaded from localStorage!';
+                        document.getElementById('result').className = 'result success';
+                    } else {
+                        document.getElementById('result').textContent = 'No token found in localStorage';
+                        document.getElementById('result').className = 'result error';
+                    }
+                } else {
+                    document.getElementById('result').textContent = 'No auth-storage found in localStorage';
+                    document.getElementById('result').className = 'result error';
+                }
+            } catch (error) {
+                document.getElementById('result').textContent = `Error: ${error.message}`;
+                document.getElementById('result').className = 'result error';
+            }
+        }
+        
+        async function testLogin() {
+            const resultDiv = document.getElementById('result');
+            try {
+                resultDiv.textContent = 'Logging in...';
+                resultDiv.className = 'result';
+                
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.accessToken) {
+                    document.getElementById('token').value = data.accessToken;
+                    resultDiv.textContent = `Login successful!\n\nToken: ${data.accessToken.substring(0, 50)}...`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `Login failed:\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function updateStatus() {
+            const token = document.getElementById('token').value;
+            const bookingId = document.getElementById('bookingId').value;
+            const status = document.getElementById('status').value;
+            const method = document.getElementById('method').value;
+            const endpointTemplate = document.getElementById('endpoint').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!token) {
+                resultDiv.textContent = 'Please enter a token';
+                resultDiv.className = 'result error';
+                return;
+            }
+            
+            if (!bookingId) {
+                resultDiv.textContent = 'Please enter a booking ID';
+                resultDiv.className = 'result error';
+                return;
+            }
+            
+            try {
+                resultDiv.textContent = 'Loading...';
+                resultDiv.className = 'result';
+                
+                const endpoint = `http://localhost:8080${endpointTemplate.replace('{id}', bookingId)}?status=${status}`;
+                
+                console.log('Method:', method);
+                console.log('Calling:', endpoint);
+                
+                const response = await fetch(endpoint, {
+                    method: method,
+                    headers: {
+                        'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    data = await response.text();
+                }
+                
+                if (response.ok) {
+                    resultDiv.textContent = `Success!\n\nMethod: ${method}\nEndpoint: ${endpoint}\n\nResponse:\n${typeof data === 'string' ? data : JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `Error ${response.status}:\n\nMethod: ${method}\nEndpoint: ${endpoint}\n\nResponse:\n${typeof data === 'string' ? data : JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        function clearResult() {
+            document.getElementById('result').textContent = '';
+            document.getElementById('result').className = 'result';
+        }
+    </script>
+</body>
+</html>

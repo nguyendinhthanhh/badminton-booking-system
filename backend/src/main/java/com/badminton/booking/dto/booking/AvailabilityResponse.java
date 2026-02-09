@@ -32,6 +32,15 @@ public class AvailabilityResponse {
     private boolean available;
     private String message;
 
+    /**
+     * Soft-blocked: Slot có thể bị ảnh hưởng bởi walk-in booking đang chơi
+     * - true: Có walk-in open-ended đang chơi, slot này nằm trong vùng soft-block
+     * - User vẫn có thể đặt nhưng sẽ được cảnh báo
+     */
+    private boolean softBlocked;
+    private String softBlockWarning;
+    private List<SoftBlockInfo> softBlockedBy;
+
     // Nếu không available, trả về các booking đang conflict
     private List<ConflictingBooking> conflicts;
 
@@ -55,6 +64,7 @@ public class AvailabilityResponse {
         private LocalTime effectiveEndTime; // Bao gồm buffer
 
         private String status;
+        private Boolean openEnded;  // Thêm để biết đây có phải open-ended không
     }
 
     @Data
@@ -69,6 +79,36 @@ public class AvailabilityResponse {
         private LocalTime endTime;
 
         private Integer durationMinutes;
+
+        /**
+         * Trạng thái của slot:
+         * - AVAILABLE: Hoàn toàn trống
+         * - SOFT_BLOCKED: Có thể bị ảnh hưởng bởi walk-in đang chơi
+         */
+        private String slotStatus;
+        private String warning;
+    }
+
+    /**
+     * Thông tin về booking đang gây soft-block
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SoftBlockInfo {
+        private Integer bookingId;
+
+        @JsonFormat(pattern = "HH:mm")
+        private LocalTime walkInStartTime;
+
+        @JsonFormat(pattern = "HH:mm")
+        private LocalTime estimatedEndTime;
+
+        @JsonFormat(pattern = "HH:mm")
+        private LocalTime maxEndTime;
+
+        private String guestName;
+        private String message;
     }
 }
-

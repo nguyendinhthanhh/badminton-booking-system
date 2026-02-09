@@ -137,23 +137,10 @@ const CourtManagement = () => {
     }
   };
 
-  const handleEdit = async (court) => {
+  const handleEdit = (court) => {
     setIsCreating(false);
-    setLoadingCourt(true);
-    setLoadingModalType('form');
-    
-    try {
-      const details = await courtService.getCourtById(court.id);
-      setLoadingModalType(null);
-      setEditingCourt(details);
-      setShowModal(true);
-    } catch (error) {
-      setLoadingModalType(null);
-      console.error('Error fetching court details:', error);
-      showToast('Lỗi khi tải thông tin sân', 'error');
-    } finally {
-      setLoadingCourt(false);
-    }
+    setEditingCourt(court);
+    setShowModal(true);
   };
 
   const handleViewDetails = async (court) => {

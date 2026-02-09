@@ -35,6 +35,16 @@ public class CourtPriceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(courtPriceService.createPrice(request));
     }
 
+    @PostMapping("/batch")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Tạo nhiều giá cùng lúc (batch)")
+    public ResponseEntity<Map<String, Object>> createPricesBatch(
+            @Valid @RequestBody List<CourtPriceRequest> requests,
+            @RequestParam(defaultValue = "false") boolean deleteExisting) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(courtPriceService.createPricesBatch(requests, deleteExisting));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cập nhật giá sân")
@@ -86,8 +96,7 @@ public class CourtPriceController {
                 "date", date,
                 "time", time,
                 "dayType", getDayType(date),
-                "pricePerHour", price != null ? price : "Chưa cấu hình giá"
-        ));
+                "pricePerHour", price != null ? price : "Chưa cấu hình giá"));
     }
 
     @PostMapping("/court/{courtId}/init-default")

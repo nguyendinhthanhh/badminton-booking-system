@@ -30,6 +30,9 @@ public class UpdateBookingRequest {
     // Change time slots (only if status = PENDING)
     private List<Integer> slotIds;
 
+    private java.time.LocalTime startTime;
+    private java.time.LocalTime endTime;
+
     // Admin notes
     private String adminNote;
 
@@ -37,4 +40,3 @@ public class UpdateBookingRequest {
     private LocalDateTime actualCheckInTime;
     private LocalDateTime actualCheckOutTime;
 }
-

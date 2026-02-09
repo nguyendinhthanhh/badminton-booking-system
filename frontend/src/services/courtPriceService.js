@@ -46,6 +46,11 @@ const courtPriceService = {
   createDefaultPrices: async (courtId) => {
     const response = await axiosInstance.post(`/court-prices/court/${courtId}/init-default`);
     return response.data;
+  },
+
+  createPricesBatch: async (prices, deleteExisting = false) => {
+    const response = await axiosInstance.post(`/court-prices/batch?deleteExisting=${deleteExisting}`, prices);
+    return response.data;
   }
 };
 

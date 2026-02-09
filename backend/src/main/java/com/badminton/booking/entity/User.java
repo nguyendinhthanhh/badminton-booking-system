@@ -69,13 +69,11 @@ public class User {
     @JoinColumn(name = "role_id")
     private Role role;
 
-
     @OneToMany(mappedBy = "user")
     private Set<Booking> bookings = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "staff")
     private Set<CheckInLog> checkInLogs = new LinkedHashSet<>();
-
 
     @OneToMany(mappedBy = "user")
     private Set<Order> orders = new LinkedHashSet<>();
@@ -95,7 +93,21 @@ public class User {
     @OneToMany(mappedBy = "processedBy")
     private Set<Refund> processedRefunds = new LinkedHashSet<>();
 
-    @OneToMany(mappedBy = "user")
-    private Set<CoachBooking> coachBookings = new LinkedHashSet<>();
+    @Column(name = "search_text", columnDefinition = "TEXT")
+    private String searchText;
 
+    @PrePersist
+    @PreUpdate
+    public void updateSearchText() {
+        String rawText = (username + " " + (fullName != null ? fullName : "") + " " + (email != null ? email : "") + " "
+                + (phoneNumber != null ? phoneNumber : "")).toLowerCase();
+        this.searchText = removeAccents(rawText);
+    }
+
+    private String removeAccents(String text) {
+        if (text == null)
+            return null;
+        String normalized = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD);
+        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "").replaceAll("đ", "d").replaceAll("Đ", "D");
+    }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
+const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null, loading = false }) => {
   const [formData, setFormData] = useState({
     name: '',
     type: 'SINGLE',
@@ -8,9 +8,10 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
     location: '',
     description: '',
     imageUrl: '',
+    images: [''],
     capacity: 4
   });
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const courtTypes = [
     { value: 'SINGLE', label: 'Singles Court' },
@@ -30,13 +31,18 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
 
   useEffect(() => {
     if (editData) {
+      const images = (editData.images && Array.isArray(editData.images) && editData.images.length > 0) 
+        ? editData.images 
+        : (editData.imageUrl ? [editData.imageUrl] : ['']);
+      
       setFormData({
         name: editData.name || '',
         type: editData.type || 'SINGLE',
         status: editData.status || 'ACTIVE',
         location: editData.location || '',
         description: editData.description || '',
-        imageUrl: editData.imageUrl || '',
+        imageUrl: images[0] || '',
+        images: images,
         capacity: editData.capacity || 4
       });
     } else {
@@ -47,6 +53,7 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
         location: '',
         description: '',
         imageUrl: '',
+        images: [''],
         capacity: 4
       });
     }
@@ -62,9 +69,17 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     try {
-      await onSubmit(formData);
+      // Filter out empty image URLs
+      const filteredImages = formData.images.filter(url => url && url.trim() !== '');
+      const submitData = {
+        ...formData,
+        images: filteredImages.length > 0 ? filteredImages : undefined,
+        imageUrl: filteredImages[0] || formData.imageUrl
+      };
+      
+      await onSubmit(submitData);
       setFormData({
         name: '',
         type: 'SINGLE',
@@ -72,13 +87,14 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
         location: '',
         description: '',
         imageUrl: '',
+        images: [''],
         capacity: 4
       });
       onClose();
     } catch (error) {
       console.error('Error submitting form:', error);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -90,7 +106,7 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
         {/* Backdrop */}
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
           onClick={onClose}
         ></div>
@@ -120,6 +136,39 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
           {/* Content */}
           <form onSubmit={handleSubmit} className="max-h-[calc(100vh-200px)] overflow-y-auto">
             <div className="px-6 py-4 space-y-4">
+              {loading ? (
+                // Skeleton Loading
+                <>
+                  <div className="space-y-2">
+                    <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="h-10 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <div className="h-4 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                      <div className="h-10 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                      <div className="h-10 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="h-10 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="h-24 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="h-32 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                  </div>
+                </>
+              ) : (
+                // Actual Form
+                <>
               <div>
                 <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
                   Tên sân *
@@ -200,31 +249,78 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
 
               <div>
                 <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
-                  Ảnh sân
+                  Ảnh sân (Tối đa 5 ảnh)
                 </label>
-                <div className="space-y-2">
-                  <input
-                    type="url"
-                    name="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={handleChange}
-                    placeholder="Tải ảnh lên hoặc kéo thả vào đây"
-                    className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                  />
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    PNG, JPG, GIF lên đến 10MB
-                  </p>
-                  {formData.imageUrl && (
-                    <div className="mt-2 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
-                      <img 
-                        src={formData.imageUrl} 
-                        alt="Preview" 
-                        className="w-full h-40 object-cover"
-                        onError={(e) => {
-                          e.target.src = 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400';
-                        }}
-                      />
+
+                <div className="space-y-3">
+                  {formData.images.map((url, index) => (
+                    <div key={index} className="flex gap-2 items-start">
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="url"
+                          value={url}
+                          onChange={(e) => {
+                            const newImages = [...formData.images];
+                            newImages[index] = e.target.value;
+                            setFormData(prev => ({
+                              ...prev,
+                              images: newImages,
+                              imageUrl: index === 0 ? e.target.value : prev.imageUrl
+                            }));
+                          }}
+                          placeholder={`URL ảnh ${index + 1}`}
+                          className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                        />
+                        {url && (
+                          <div className="relative h-24 w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
+                            <img
+                              src={url}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.src = 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400';
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      {formData.images.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newImages = formData.images.filter((_, i) => i !== index);
+                            setFormData(prev => ({
+                              ...prev,
+                              images: newImages,
+                              imageUrl: index === 0 && newImages.length > 0 ? newImages[0] : prev.imageUrl
+                            }));
+                          }}
+                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                          title="Xóa ảnh"
+                        >
+                          <span className="material-symbols-outlined text-xl">delete</span>
+                        </button>
+                      )}
                     </div>
+                  ))}
+
+                  {/* Add Image Button */}
+                  {formData.images.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          images: [...prev.images, '']
+                        }));
+                      }}
+                      className="flex items-center gap-1.5 text-sm font-medium text-purple-600 hover:text-purple-700"
+                    >
+                      <span className="material-symbols-outlined text-lg">add_circle</span>
+                      Thêm ảnh khác
+                    </button>
                   )}
                 </div>
               </div>
@@ -244,6 +340,8 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
                   ))}
                 </select>
               </div>
+                </>
+              )}
             </div>
 
             {/* Footer */}
@@ -251,17 +349,17 @@ const CourtFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
               <button
                 type="button"
                 onClick={onClose}
-                disabled={loading}
+                disabled={submitting || loading}
                 className="px-3 py-1.5 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium text-sm disabled:opacity-50"
               >
                 Hủy
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={submitting || loading}
                 className="px-3 py-1.5 rounded-md bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm disabled:opacity-50 flex items-center gap-2"
               >
-                {loading ? (
+                {submitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     {isEditMode ? 'Đang cập nhật...' : 'Đang tạo...'}

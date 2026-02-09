@@ -30,9 +30,10 @@ public interface CourtPriceService {
 
     /**
      * Lấy giá cho sân tại thời điểm cụ thể
+     * 
      * @param courtId ID sân
-     * @param date Ngày (để xác định WEEKDAY/WEEKEND)
-     * @param time Giờ
+     * @param date    Ngày (để xác định WEEKDAY/WEEKEND)
+     * @param time    Giờ
      * @return Giá/giờ
      */
     BigDecimal getPriceForTime(Integer courtId, LocalDate date, LocalTime time);
@@ -41,4 +42,9 @@ public interface CourtPriceService {
      * Tạo bảng giá mặc định cho sân
      */
     List<CourtPriceResponse> createDefaultPricesForCourt(Integer courtId);
+
+    /**
+     * Tạo nhiều giá cùng lúc (batch), tùy chọn xóa giá cũ
+     */
+    java.util.Map<String, Object> createPricesBatch(List<CourtPriceRequest> requests, boolean deleteExisting);
 }

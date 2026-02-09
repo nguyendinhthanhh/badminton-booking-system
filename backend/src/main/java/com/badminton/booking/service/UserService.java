@@ -33,4 +33,6 @@ public interface UserService {
     void reactivateUser(Integer id);
 
     boolean existsByUsername(String username);
+
+    void reindexUsers();
 }

@@ -65,28 +65,17 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all users with pagination and filter", description = "Admin only")
     public ResponseEntity<Page<UserResponse>> getAllUsers(
-            @Parameter(description = "Search keyword (username, fullName, email, phoneNumber)")
-            @RequestParam(required = false) String keyword,
-            @Parameter(description = "Filter by username")
-            @RequestParam(required = false) String username,
-            @Parameter(description = "Filter by full name")
-            @RequestParam(required = false) String fullName,
-            @Parameter(description = "Filter by email")
-            @RequestParam(required = false) String email,
-            @Parameter(description = "Filter by phone number")
-            @RequestParam(required = false) String phoneNumber,
-            @Parameter(description = "Filter by gender (MALE, FEMALE, OTHER)")
-            @RequestParam(required = false) Gender gender,
-            @Parameter(description = "Filter by role name")
-            @RequestParam(required = false) String roleName,
-            @Parameter(description = "Filter by date of birth from (yyyy-MM-dd)")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateOfBirthFrom,
-            @Parameter(description = "Filter by date of birth to (yyyy-MM-dd)")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateOfBirthTo,
-            @Parameter(description = "Filter by created at from (yyyy-MM-dd)")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdAtFrom,
-            @Parameter(description = "Filter by created at to (yyyy-MM-dd)")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdAtTo,
+            @Parameter(description = "Search keyword (username, fullName, email, phoneNumber)") @RequestParam(required = false) String keyword,
+            @Parameter(description = "Filter by username") @RequestParam(required = false) String username,
+            @Parameter(description = "Filter by full name") @RequestParam(required = false) String fullName,
+            @Parameter(description = "Filter by email") @RequestParam(required = false) String email,
+            @Parameter(description = "Filter by phone number") @RequestParam(required = false) String phoneNumber,
+            @Parameter(description = "Filter by gender (MALE, FEMALE, OTHER)") @RequestParam(required = false) Gender gender,
+            @Parameter(description = "Filter by role name") @RequestParam(required = false) String roleName,
+            @Parameter(description = "Filter by date of birth from (yyyy-MM-dd)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateOfBirthFrom,
+            @Parameter(description = "Filter by date of birth to (yyyy-MM-dd)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateOfBirthTo,
+            @Parameter(description = "Filter by created at from (yyyy-MM-dd)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdAtFrom,
+            @Parameter(description = "Filter by created at to (yyyy-MM-dd)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdAtTo,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
@@ -186,5 +175,13 @@ public class UserController {
     public ResponseEntity<Boolean> checkUsernameExists(@RequestParam String username) {
         boolean exists = userService.existsByUsername(username);
         return ResponseEntity.ok(exists);
+    }
+
+    @PostMapping("/reindex")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Re-index all users for search", description = "Admin only - Updates searchText for all users")
+    public ResponseEntity<String> reindexUsers() {
+        userService.reindexUsers();
+        return ResponseEntity.ok("User search index updated successfully");
     }
 }

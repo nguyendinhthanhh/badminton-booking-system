@@ -60,10 +60,33 @@ const Header = () => {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="size-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-all border border-transparent hover:border-blue-100 overflow-hidden"
               >
-                {user?.avatar ? (
-                  <img src={user.avatar} alt="User" className="w-full h-full object-cover" />
+                {user ? (
+                  user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="User"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                      {user.fullName?.charAt(0)?.toUpperCase() || user.username?.charAt(0)?.toUpperCase()}
+                    </div>
+                  )
                 ) : (
                   <span className="material-symbols-outlined text-[24px]">person</span>
+                )}
+                {/* Fallback for Image Error - Hidden by default */}
+                {user?.avatar && (
+                  <div
+                    className="hidden w-full h-full bg-blue-600 items-center justify-center text-white font-bold text-sm absolute inset-0"
+                  >
+                    {user.fullName?.charAt(0)?.toUpperCase() || user.username?.charAt(0)?.toUpperCase()}
+                  </div>
                 )}
               </button>
 
@@ -76,6 +99,16 @@ const Header = () => {
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Tài khoản</p>
                         <p className="text-sm font-black text-gray-900 truncate">{user.fullName || user.username}</p>
                       </div>
+                      {user?.roleName === 'ADMIN' && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-purple-600 hover:bg-purple-50 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">dashboard</span>
+                          Vào trang quản trị
+                        </Link>
+                      )}
                       <Link
                         to="/profile"
                         onClick={() => setIsDropdownOpen(false)}
@@ -93,7 +126,11 @@ const Header = () => {
                         Lịch đặt sân
                       </Link>
                       <button
-                        onClick={handleLogout}
+                        onClick={() => {
+                          logout();
+                          setIsDropdownOpen(false);
+                          navigate('/login');
+                        }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
                       >
                         <span className="material-symbols-outlined text-[20px]">logout</span>

@@ -4,22 +4,32 @@ import { myBookingService } from '../../services/myBookingService';
 import BookingCard from '../../components/customer/BookingCard';
 import CancelBookingModal from '../../components/customer/CancelBookingModal';
 import BookingCardSkeleton from '../../components/common/BookingCardSkeleton';
+import CheckInCountdown from '../../components/customer/CheckInCountdown';
+import AlertModal from '../../components/common/AlertModal';
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  
+
+  // Alert modal
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: ''
+  });
+
   // Cancel modal
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [cancelLoading, setCancelLoading] = useState(false);
-  
+
   // Date filters - Mặc định không filter theo ngày
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  
+
   // Status filter
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [paymentFilter, setPaymentFilter] = useState('ALL');
@@ -33,7 +43,7 @@ const MyBookings = () => {
     setError(null);
     try {
       const data = await myBookingService.getMyBookings(
-        fromDate || null, 
+        fromDate || null,
         toDate || null,
         statusFilter,
         paymentFilter
@@ -54,7 +64,7 @@ const MyBookings = () => {
   const handleQuickDate = (days) => {
     const from = new Date();
     const to = new Date();
-    
+
     if (days === 0) {
       // Hôm nay
       setFromDate(from.toISOString().split('T')[0]);
@@ -84,21 +94,22 @@ const MyBookings = () => {
     setShowCancelModal(true);
   };
 
+
   const handleCancelConfirm = async (reason) => {
     setCancelLoading(true);
     setError(null);
-    
+
     try {
       await myBookingService.cancelBooking(selectedBooking.bookingId, reason);
-      
+
       // Show success message
       setSuccessMessage(`Đã hủy booking #${selectedBooking.bookingId} thành công`);
       setTimeout(() => setSuccessMessage(''), 5000);
-      
+
       // Close modal
       setShowCancelModal(false);
       setSelectedBooking(null);
-      
+
       // Refresh bookings
       fetchBookings();
     } catch (err) {
@@ -171,7 +182,7 @@ const MyBookings = () => {
                 className="w-full px-3 py-2 bg-white border-2 border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Đến ngày
@@ -364,8 +375,8 @@ const MyBookings = () => {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {dateBookings.map((booking) => (
-                        <BookingCard 
-                          key={booking.bookingId} 
+                        <BookingCard
+                          key={booking.bookingId}
                           booking={booking}
                           onCancel={handleCancelClick}
                         />

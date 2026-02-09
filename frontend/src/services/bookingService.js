@@ -20,15 +20,15 @@ const bookingService = {
   // Kiểm tra availability
   checkAvailability: async (courtId, playDate, startTime, endTime) => {
     try {
-      const params = { 
-        courtId: parseInt(courtId), 
-        playDate, 
-        startTime, 
-        endTime 
+      const params = {
+        courtId: parseInt(courtId),
+        playDate,
+        startTime,
+        endTime
       };
       console.log('🔍 Checking availability:', params);
       console.log('📤 Full URL:', `/bookings/check-availability?courtId=${courtId}&playDate=${playDate}&startTime=${startTime}&endTime=${endTime}`);
-      
+
       const response = await axiosClient.get('/bookings/check-availability', { params });
       console.log('✅ Availability response:', response.data);
       return response.data;
@@ -116,6 +116,62 @@ const bookingService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching court bookings:', error);
+      throw error;
+    }
+  },
+
+  // Cập nhật trạng thái booking
+  updateStatus: async (bookingId, status) => {
+    try {
+      const response = await axiosClient.patch(`/bookings/${bookingId}/status`, null, {
+        params: { status }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      throw error;
+    }
+  },
+
+  // Gia hạn booking
+  extendBooking: async (bookingId, extendData) => {
+    try {
+      const response = await axiosClient.post(`/bookings/${bookingId}/extend`, extendData);
+      return response.data;
+    } catch (error) {
+      console.error('Error extending booking:', error);
+      throw error;
+    }
+  },
+  // User tự hủy/yêu cầu hủy booking
+  cancelMyBooking: async (bookingId, reason) => {
+    try {
+      const response = await axiosClient.post(`/bookings/my-bookings/${bookingId}/cancel`, { reason });
+      return response.data;
+    } catch (error) {
+      console.error('Error canceling my booking:', error);
+      throw error;
+    }
+  },
+
+  // Admin duyệt hủy booking
+  approveCancellation: async (bookingId) => {
+    try {
+      const response = await axiosClient.post(`/bookings/${bookingId}/cancellation/approve`);
+      return response.data;
+    } catch (error) {
+      console.error('Error approving cancellation:', error);
+      throw error;
+    }
+  },
+
+  // Admin từ chối hủy booking
+  rejectCancellation: async (bookingId) => {
+    try {
+      const response = await axiosClient.post(`/bookings/${bookingId}/cancellation/reject`);
+      return response.data;
+    } catch (error) {
+      console.error('Error rejecting cancellation:', error);
       throw error;
     }
   }

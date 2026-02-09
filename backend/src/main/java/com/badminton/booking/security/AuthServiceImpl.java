@@ -3,11 +3,14 @@ package com.badminton.booking.security;
 import com.badminton.booking.dto.request.LoginRequest;
 import com.badminton.booking.dto.response.AuthResponse;
 import com.badminton.booking.dto.request.RegisterRequest;
+import com.badminton.booking.entity.RefreshToken;
 import com.badminton.booking.entity.Role;
 import com.badminton.booking.entity.User;
 import com.badminton.booking.repository.RefreshTokenRepo;
 import com.badminton.booking.repository.RoleRepository;
 import com.badminton.booking.repository.UserRepository;
+
+import java.time.Instant;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -68,11 +71,22 @@ public class AuthServiceImpl implements AuthService {
         }
 
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
+                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
         String accessToken = jwtService.generateAccessToken(user);
 
+        // Tạo refresh token
+        String refreshTokenString = jwtService.generateRefreshToken();
+
+        // Xóa refresh token cũ của user (nếu có)
+        refreshTokenRepo.deleteByUser(user);
+
+        // Tạo và lưu refresh token mới
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setToken(refreshTokenString);
+        refreshToken.setUser(user);
+        refreshToken.setExpiryDate(Instant.now().plusMillis(jwtService.getRefreshTokenExpiration()));
+        refreshTokenRepo.save(refreshToken);
 
         AuthResponse.UserInfo userInfo = new AuthResponse.UserInfo(
                 user.getId().longValue(),
@@ -80,12 +94,59 @@ public class AuthServiceImpl implements AuthService {
                 user.getEmail(),
                 user.getFullName(),
                 user.getPhoneNumber(),
-                user.getRole() != null ? user.getRole().getRoleName() : "USER"
-        );
+                user.getRole() != null ? user.getRole().getRoleName() : "USER");
 
         AuthResponse response = new AuthResponse();
         response.setTokenType("Bearer");
         response.setAccessToken(accessToken);
+        response.setRefreshToken(refreshTokenString);
+        response.setUser(userInfo);
+
+        return response;
+    }
+
+    @Override
+    public AuthResponse refreshToken(String refreshTokenString) {
+        // Tìm refresh token trong DB
+        RefreshToken refreshToken = refreshTokenRepo.findByToken(refreshTokenString)
+                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+
+        // Kiểm tra hết hạn
+        if (refreshToken.getExpiryDate().isBefore(Instant.now())) {
+            refreshTokenRepo.delete(refreshToken);
+            throw new RuntimeException("Refresh token has expired. Please login again.");
+        }
+
+        User user = refreshToken.getUser();
+
+        // Kiểm tra user còn active không
+        if (!user.getIsActive()) {
+            refreshTokenRepo.delete(refreshToken);
+            throw new RuntimeException("Account is deactivated.");
+        }
+
+        // Tạo access token mới
+        String newAccessToken = jwtService.generateAccessToken(user);
+
+        // Rotate refresh token (tạo token mới để tăng security)
+        String newRefreshTokenString = jwtService.generateRefreshToken();
+        refreshToken.setToken(newRefreshTokenString);
+        refreshToken.setExpiryDate(Instant.now().plusMillis(jwtService.getRefreshTokenExpiration()));
+        refreshTokenRepo.save(refreshToken);
+
+        // Build response
+        AuthResponse.UserInfo userInfo = new AuthResponse.UserInfo(
+                user.getId().longValue(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getPhoneNumber(),
+                user.getRole() != null ? user.getRole().getRoleName() : "USER");
+
+        AuthResponse response = new AuthResponse();
+        response.setTokenType("Bearer");
+        response.setAccessToken(newAccessToken);
+        response.setRefreshToken(newRefreshTokenString);
         response.setUser(userInfo);
 
         return response;

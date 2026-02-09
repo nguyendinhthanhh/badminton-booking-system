@@ -13,7 +13,9 @@ import useAuthStore from '../../store/useAuthStore';
 
 const UserManagement = () => {
   // Get cached data from store
+  const store = useDataStore();
   const {
+    version,
     users: cachedUsers,
     setUsers: setCachedUsers,
     setUserStats: setCachedStats,
@@ -21,7 +23,16 @@ const UserManagement = () => {
     setUserPage,
     invalidateUsers,
     isCacheValid
-  } = useDataStore();
+  } = store;
+
+  useEffect(() => {
+    console.log('UserManagement Store Version:', version);
+    console.log('UserManagement Store Actions:', {
+      setCachedStats: typeof setCachedStats,
+      setCachedUsers: typeof setCachedUsers,
+      setUserFilters: typeof setUserFilters
+    });
+  }, [version, setCachedStats, setCachedUsers, setUserFilters]);
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +49,7 @@ const UserManagement = () => {
   const [loadingModalType, setLoadingModalType] = useState(null); // 'detail' or 'form'
   const [isUsingCache, setIsUsingCache] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  
+
   const [filters, setFilters] = useState(cachedUsers.filters || {
     keyword: '',
     roleName: '',
@@ -68,7 +79,7 @@ const UserManagement = () => {
       }
       setLoading(false);
       setIsUsingCache(true);
-      
+
       // Hide cache indicator after 3 seconds
       setTimeout(() => setIsUsingCache(false), 3000);
     } else {
@@ -84,11 +95,11 @@ const UserManagement = () => {
       // Fetch all users to calculate stats
       const allUsersData = await userService.getAllUsers(0, 10000, {});
       const allUsers = allUsersData.content || [];
-      
+
       const total = allUsers.length;
       const active = allUsers.filter(u => u.status !== 'LOCKED').length;
       const locked = allUsers.filter(u => u.status === 'LOCKED').length;
-      
+
       const roleCount = {
         admin: allUsers.filter(u => u.roleName === 'ADMIN').length,
         manager: allUsers.filter(u => u.roleName === 'MANAGER').length,
@@ -117,7 +128,7 @@ const UserManagement = () => {
       setUsers(data.content || []);
       setTotalPages(data.totalPages || 0);
       setTotalElements(data.totalElements || 0);
-      
+
       // Cache the data
       setCachedUsers(data);
       setUserFilters(filters);
@@ -146,7 +157,7 @@ const UserManagement = () => {
     setIsDetailModalOpen(true);
     setLoadingUser(true);
     setSelectedUser(null);
-    
+
     try {
       const user = await userService.getUserById(userId);
       setSelectedUser(user);
@@ -161,20 +172,20 @@ const UserManagement = () => {
   const handleEdit = async (userId) => {
     setIsCreating(false);
     setLoadingUser(true);
-    
+
     // Only show skeleton if API takes longer than 300ms
     const skeletonTimer = setTimeout(() => {
       setLoadingModalType('form');
     }, 300);
-    
+
     try {
       const user = await userService.getUserById(userId);
       clearTimeout(skeletonTimer);
       setLoadingModalType(null);
-      
+
       // Set user data first
       setSelectedUser(user);
-      
+
       // Wait a tiny bit to ensure state is updated before opening modal
       setTimeout(() => {
         setIsFormModalOpen(true);
@@ -216,7 +227,7 @@ const UserManagement = () => {
       } else {
         await userService.updateUser(selectedUser.id, userData);
         showToast('Cập nhật người dùng thành công', 'success');
-        
+
         // If updating current logged-in user, refresh their auth data
         const currentUser = useAuthStore.getState().user;
         if (currentUser && currentUser.id === selectedUser.id) {
@@ -293,7 +304,7 @@ const UserManagement = () => {
               <span className="material-symbols-outlined text-lg">download</span>
               Xuất Excel
             </button>
-            <button 
+            <button
               onClick={handleAddUser}
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors shadow-md shadow-purple-600/20"
             >
@@ -453,9 +464,8 @@ const UserManagement = () => {
                     users.map((user) => (
                       <tr
                         key={user.id}
-                        className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${
-                          user.status === 'LOCKED' ? 'bg-gray-50/50' : ''
-                        }`}
+                        className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${user.status === 'LOCKED' ? 'bg-gray-50/50' : ''
+                          }`}
                       >
                         <td className="p-4">
                           <div className="flex items-center gap-3">
@@ -547,16 +557,15 @@ const UserManagement = () => {
                   } else {
                     pageNum = page - 2 + idx;
                   }
-                  
+
                   return (
                     <button
                       key={pageNum}
                       onClick={() => setPage(pageNum)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-bold ${
-                        page === pageNum
+                      className={`px-3 py-1.5 rounded-lg text-sm font-bold ${page === pageNum
                           ? 'border border-purple-600 bg-purple-600 text-white'
                           : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-purple-600'
-                      }`}
+                        }`}
                     >
                       {pageNum + 1}
                     </button>

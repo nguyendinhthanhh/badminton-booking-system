@@ -15,7 +15,7 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "badminton_courts")
-public class BadmintonCourt  {
+public class BadmintonCourt {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "badminton_courts_id_gen")
     @SequenceGenerator(name = "badminton_courts_id_gen", sequenceName = "badminton_courts_court_id_seq", allocationSize = 1)
@@ -26,11 +26,9 @@ public class BadmintonCourt  {
     @Column(name = "name", length = 100)
     private String name;
 
-
     @Column(name = "status", length = 50)
     @Enumerated(EnumType.STRING)
     private CourtStatus status;
-
 
     @Column(name = "type", length = 50)
     @Enumerated(EnumType.STRING)
@@ -61,6 +59,9 @@ public class BadmintonCourt  {
 
     @OneToMany(mappedBy = "court", cascade = CascadeType.ALL)
     private Set<CourtPrice> courtPrices = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "court", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<CourtImage> images = new LinkedHashSet<>();
 
     @PrePersist
     protected void onCreate() {

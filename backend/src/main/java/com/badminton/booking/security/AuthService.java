@@ -6,6 +6,10 @@ import com.badminton.booking.dto.response.AuthResponse;
 
 public interface AuthService {
     String register(RegisterRequest req);
+
     AuthResponse login(LoginRequest request);
+
+    AuthResponse refreshToken(String refreshToken);
+
     void logout(String username);
 }

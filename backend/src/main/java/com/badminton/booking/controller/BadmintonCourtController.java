@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Tag(name = "Badminton Courts", description = "Endpoints for managing badminton courts")
 @RestController
@@ -24,19 +25,15 @@ import java.time.LocalDate;
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class BadmintonCourtController {
 
-
     @Autowired
     private BadmintonCourtService badmintonCourtService;
-
 
     @Operation(summary = "Create Badminton Court", description = "Create a new badminton court")
     @PostMapping("/create")
     public ResponseEntity<BadmintonCourtResponse> createCourt(@Valid @RequestBody BadmintonCourtCreateRequest request) {
-        BadmintonCourtResponse badmintonCourt =  badmintonCourtService.createBadmintonCourt(request);
+        BadmintonCourtResponse badmintonCourt = badmintonCourtService.createBadmintonCourt(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(badmintonCourt);
     }
-
-
 
     @Operation(summary = "Get Badminton Court by ID", description = "Retrieve details of a specific badminton court by its ID")
     @GetMapping("/findById/{courtId}")
@@ -45,50 +42,79 @@ public class BadmintonCourtController {
         return ResponseEntity.ok(response);
     }
 
-
     @Operation(summary = "Get All Badminton Courts", description = "Retrieve a paginated list of all badminton courts")
     @GetMapping("/all")
-    public ResponseEntity<Slice<BadmintonCourtResponse>> getAllCourts(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+    public ResponseEntity<Slice<BadmintonCourtResponse>> getAllCourts(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
 
-        Slice<BadmintonCourtResponse> responses = badmintonCourtService.getAllBadmintonCourts(page,size);
+        Slice<BadmintonCourtResponse> responses = badmintonCourtService.getAllBadmintonCourts(page, size);
 
         return ResponseEntity.ok(responses);
     }
 
-
-
     @Operation(summary = "delete Badminton Court by ID", description = "Delete a specific badminton court by its ID")
     @DeleteMapping("/deleteById/{courtId}")
-    public ResponseEntity<String> deleteCourtById(@PathVariable("courtId") Integer court){
+    public ResponseEntity<String> deleteCourtById(@PathVariable("courtId") Integer court) {
         badmintonCourtService.deleteBadmintonCourtById(court);
         return ResponseEntity.noContent().build();
     }
 
-
     @Operation(summary = "update Badminton Court by ID", description = "Update a specific badminton court by its ID")
     @PutMapping("/updateById/{courtId}")
-    public ResponseEntity<String> updateCourtById(@PathVariable("courtId") Integer court, @Valid @RequestBody BadmintonCourtUpdateRequest request){
-        badmintonCourtService.updateBadmintonCourt(court , request);
+    public ResponseEntity<String> updateCourtById(@PathVariable("courtId") Integer court,
+            @Valid @RequestBody BadmintonCourtUpdateRequest request) {
+        badmintonCourtService.updateBadmintonCourt(court, request);
         return ResponseEntity.noContent().build();
     }
-
 
     /**
      * API MỚI: Lấy chi tiết sân đầy đủ cho trang Chi tiết sân
      * Bao gồm: thông tin sân + bảng giá + slot trống
      * Chỉ cần 1 API thay vì 3 API
      */
-    @Operation(summary = "Get Court Detail",
-               description = "Get full court details including prices and available slots. Use this for Court Detail page.")
+    @Operation(summary = "Get Court Detail", description = "Get full court details including prices and available slots. Use this for Court Detail page.")
     @GetMapping("/{courtId}/detail")
     public ResponseEntity<CourtDetailResponse> getCourtDetail(
-            @Parameter(description = "Court ID")
-            @PathVariable Integer courtId,
+            @Parameter(description = "Court ID") @PathVariable Integer courtId,
 
-            @Parameter(description = "Date to check availability (default: today)", example = "2026-02-05")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @Parameter(description = "Date to check availability (default: today)", example = "2026-02-05") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
         CourtDetailResponse response = badmintonCourtService.getCourtDetail(courtId, date);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Filter courts by price, type, and status
+     */
+    @Operation(summary = "Filter Courts", description = "Filter courts by price range, type, and status. All filters are optional.")
+    @GetMapping("/filter")
+    public ResponseEntity<Slice<BadmintonCourtResponse>> filterCourts(
+            @Parameter(description = "Minimum price per hour") @RequestParam(required = false) java.math.BigDecimal minPrice,
+
+            @Parameter(description = "Maximum price per hour") @RequestParam(required = false) java.math.BigDecimal maxPrice,
+
+            @Parameter(description = "Court types (SINGLE, DOUBLE, VIP)") @RequestParam(required = false) List<String> types,
+
+            @Parameter(description = "Court status (default: ACTIVE)") @RequestParam(defaultValue = "ACTIVE") String status,
+
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        // Parse court types
+        List<com.badminton.booking.entity.enums.CourtType> courtTypes = null;
+        if (types != null && !types.isEmpty()) {
+            courtTypes = types.stream()
+                    .map(com.badminton.booking.entity.enums.CourtType::valueOf)
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        // Parse status
+        com.badminton.booking.entity.enums.CourtStatus courtStatus = com.badminton.booking.entity.enums.CourtStatus
+                .valueOf(status);
+
+        Slice<BadmintonCourtResponse> responses = badmintonCourtService.filterCourts(
+                minPrice, maxPrice, courtTypes, courtStatus, page, size);
+
+        return ResponseEntity.ok(responses);
     }
 }

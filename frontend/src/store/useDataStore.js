@@ -3,6 +3,7 @@ import { create } from 'zustand';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const useDataStore = create((set, get) => ({
+  version: '1.0.1', // Add version for debugging
   // Courts data
   courts: {
     data: null,
@@ -14,7 +15,20 @@ const useDataStore = create((set, get) => ({
   users: {
     data: null,
     lastFetch: null,
-    searchTerm: ''
+    searchTerm: '',
+    page: 0,
+    filters: {
+      keyword: '',
+      roleName: '',
+      sortBy: 'createdAt',
+      sortDir: 'desc'
+    },
+    stats: {
+      total: 0,
+      active: 0,
+      locked: 0,
+      roles: { admin: 0, manager: 0, staff: 0, user: 0 }
+    }
   },
 
   // Court Prices data
@@ -75,6 +89,27 @@ const useDataStore = create((set, get) => ({
     }
   }),
 
+  setUserStats: (stats) => set({
+    users: {
+      ...get().users,
+      stats
+    }
+  }),
+
+  setUserFilters: (filters) => set({
+    users: {
+      ...get().users,
+      filters
+    }
+  }),
+
+  setUserPage: (page) => set({
+    users: {
+      ...get().users,
+      page
+    }
+  }),
+
   invalidateUsers: () => set({
     users: {
       ...get().users,
@@ -93,7 +128,7 @@ const useDataStore = create((set, get) => ({
   updateCourtPrice: (updatedPrice) => {
     const currentData = get().courtPrices.data;
     if (!currentData) return;
-    
+
     set({
       courtPrices: {
         data: currentData.map(p => p.id === updatedPrice.id ? updatedPrice : p),
@@ -105,7 +140,7 @@ const useDataStore = create((set, get) => ({
   addCourtPrice: (newPrice) => {
     const currentData = get().courtPrices.data;
     if (!currentData) return;
-    
+
     set({
       courtPrices: {
         data: [...currentData, newPrice],
@@ -117,7 +152,7 @@ const useDataStore = create((set, get) => ({
   deleteCourtPrice: (priceId) => {
     const currentData = get().courtPrices.data;
     if (!currentData) return;
-    
+
     set({
       courtPrices: {
         data: currentData.filter(p => p.id !== priceId),
@@ -145,7 +180,7 @@ const useDataStore = create((set, get) => ({
   updateBookingInSchedule: (updatedBooking) => {
     const currentData = get().bookingSchedule.data;
     if (!currentData) return;
-    
+
     // Update booking in the schedule data structure
     const updatedData = {
       ...currentData,
@@ -153,15 +188,15 @@ const useDataStore = create((set, get) => ({
         ...court,
         timeSlots: court.timeSlots?.map(slot => ({
           ...slot,
-          bookings: slot.bookings?.map(booking => 
-            booking.bookingDetailId === updatedBooking.bookingDetailId 
+          bookings: slot.bookings?.map(booking =>
+            booking.bookingDetailId === updatedBooking.bookingDetailId
               ? { ...booking, ...updatedBooking }
               : booking
           )
         }))
       }))
     };
-    
+
     set({
       bookingSchedule: {
         ...get().bookingSchedule,
@@ -182,7 +217,24 @@ const useDataStore = create((set, get) => ({
   // Clear all cache
   clearCache: () => set({
     courts: { data: null, lastFetch: null, searchTerm: '' },
-    users: { data: null, lastFetch: null, searchTerm: '' },
+    users: {
+      data: null,
+      lastFetch: null,
+      searchTerm: '',
+      page: 0,
+      filters: {
+        keyword: '',
+        roleName: '',
+        sortBy: 'createdAt',
+        sortDir: 'desc'
+      },
+      stats: {
+        total: 0,
+        active: 0,
+        locked: 0,
+        roles: { admin: 0, manager: 0, staff: 0, user: 0 }
+      }
+    },
     courtPrices: { data: null, lastFetch: null },
     bookingSchedule: { data: null, selectedDate: null, lastFetch: null }
   })
