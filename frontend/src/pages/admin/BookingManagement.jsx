@@ -27,6 +27,7 @@ const BookingManagement = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
     const [filterPayment, setFilterPayment] = useState("");
+    const [filterCourt, setFilterCourt] = useState("");
     const [sortBy, setSortBy] = useState("bookingDate");
     const [sortDir, setSortDir] = useState("desc");
 
@@ -49,7 +50,7 @@ const BookingManagement = () => {
 
     useEffect(() => {
         fetchData();
-    }, [currentPage, pageSize, filterStatus, filterPayment, sortBy, sortDir]);
+    }, [currentPage, pageSize, filterStatus, filterPayment, filterCourt, sortBy, sortDir]);
 
     const fetchData = async () => {
         try {
@@ -60,6 +61,7 @@ const BookingManagement = () => {
                     size: pageSize,
                     status: filterStatus,
                     paymentStatus: filterPayment,
+                    courtId: filterCourt,
                     sortBy,
                     sortDir,
                     searchTerm
@@ -88,6 +90,7 @@ const BookingManagement = () => {
                 size: params.size !== undefined ? params.size : pageSize,
                 status: params.status !== undefined ? params.status : filterStatus,
                 paymentStatus: params.paymentStatus !== undefined ? params.paymentStatus : filterPayment,
+                courtId: params.courtId !== undefined ? params.courtId : filterCourt,
                 sortBy: params.sortBy !== undefined ? params.sortBy : sortBy,
                 sortDir: params.sortDir !== undefined ? params.sortDir : sortDir,
                 searchTerm: params.searchTerm !== undefined ? params.searchTerm : searchTerm
@@ -236,10 +239,10 @@ const BookingManagement = () => {
         setShowExtendModal(true);
     };
 
-    const handleExtendConfirm = async (bookingId, extensionData) => {
+    const handleExtendConfirm = async (bookingId, extensionMinutes, newEndTime) => {
         try {
             setExtendLoading(true);
-            await adminBookingService.extendBooking(bookingId, extensionData);
+            await adminBookingService.extendBooking(bookingId, extensionMinutes, newEndTime);
             showToast(`Gia hạn đơn #${bookingId} thành công`);
             setShowExtendModal(false);
             fetchBookings();
@@ -260,7 +263,7 @@ const BookingManagement = () => {
             setLoadingAction(true);
             await adminBookingService.approveCancellation(bookingId);
             showToast(`Đã duyệt hủy đơn #${bookingId}`);
-            fetchBookings();
+            await fetchBookings();
         } catch (err) {
             showToast(err.response?.data?.message || "Lỗi khi duyệt hủy yêu cầu", "error");
         } finally {
@@ -273,7 +276,7 @@ const BookingManagement = () => {
             setLoadingAction(true);
             await adminBookingService.rejectCancellation(bookingId);
             showToast(`Đã từ chối hủy đơn #${bookingId}`);
-            fetchBookings();
+            await fetchBookings();
         } catch (err) {
             showToast(err.response?.data?.message || "Lỗi khi từ chối yêu cầu hủy", "error");
         } finally {
@@ -466,6 +469,25 @@ const BookingManagement = () => {
                                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none text-sm">expand_more</span>
                             </div>
 
+                            <div className="relative">
+                                <select
+                                    value={filterCourt}
+                                    onChange={(e) => {
+                                        setFilterCourt(e.target.value);
+                                        setCurrentPage(0);
+                                    }}
+                                    className="appearance-none pl-4 pr-10 py-2.5 rounded-lg bg-gray-50 border-transparent focus:bg-white focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 text-sm font-medium text-gray-900 cursor-pointer outline-none transition-all"
+                                >
+                                    <option value="">Sân: Tất cả</option>
+                                    {courts.map((court) => (
+                                        <option key={court.id} value={court.id}>
+                                            {court.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none text-sm">expand_more</span>
+                            </div>
+
                             <button
                                 onClick={fetchData}
                                 className="px-3 py-2.5 rounded-lg bg-gray-50 text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-colors"
@@ -548,7 +570,19 @@ const BookingManagement = () => {
                                                         {getPaymentBadge(booking.paymentStatus)}
                                                     </div>
                                                 </td>
-                                                <td className="p-4">{getStatusBadge(booking.status)}</td>
+                                                <td className="p-4">
+                                                    {getStatusBadge(booking.status)}
+                                                    {booking.status === 'CANCELLATION_REQUESTED' && booking.notes && (
+                                                        <p className="mt-1 text-[10px] text-orange-600 font-medium max-w-[150px] truncate" title={booking.notes}>
+                                                            💬 {booking.notes
+                                                                .split('\n')
+                                                                .filter(line => line.includes('Cancellation requested by user:'))
+                                                                .map(line => line.replace('Cancellation requested by user:', '').trim())
+                                                                .filter(Boolean)
+                                                                .join(', ') || booking.notes}
+                                                        </p>
+                                                    )}
+                                                </td>
                                                 <td className="p-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
                                                         <button
@@ -589,17 +623,19 @@ const BookingManagement = () => {
                                                                     <>
                                                                         <button
                                                                             onClick={() => handleApproveCancellation(booking.bookingId)}
-                                                                            className="w-full text-left px-4 py-2.5 text-xs font-bold text-green-600 hover:bg-green-50 flex items-center gap-2"
+                                                                            disabled={loadingAction}
+                                                                            className="w-full text-left px-4 py-2.5 text-xs font-bold text-green-600 hover:bg-green-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                         >
                                                                             <span className="material-symbols-outlined text-base">check</span>
-                                                                            Duyệt hủy
+                                                                            {loadingAction ? 'Đang xử lý...' : 'Duyệt hủy'}
                                                                         </button>
                                                                         <button
                                                                             onClick={() => handleRejectCancellation(booking.bookingId)}
-                                                                            className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                                            disabled={loadingAction}
+                                                                            className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                         >
                                                                             <span className="material-symbols-outlined text-base">close</span>
-                                                                            Từ chối hủy
+                                                                            {loadingAction ? 'Đang xử lý...' : 'Từ chối hủy'}
                                                                         </button>
                                                                     </>
                                                                 )}
