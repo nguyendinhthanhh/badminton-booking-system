@@ -52,15 +52,11 @@ export const adminBookingService = {
 
   extendBooking: async (bookingId, extensionMinutes, newEndTime) => {
     try {
+      const formattedEndTime = `${newEndTime.hour.toString().padStart(2, '0')}:${newEndTime.minute.toString().padStart(2, '0')}`;
       // Try without /admin prefix first (based on your API doc)
       const response = await axiosInstance.post(`/bookings/${bookingId}/extend`, {
         extensionMinutes,
-        newEndTime: {
-          hour: newEndTime.hour,
-          minute: newEndTime.minute,
-          second: 0,
-          nano: 0
-        }
+        newEndTime: formattedEndTime
       });
       return response.data;
     } catch (error) {

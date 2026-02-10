@@ -258,42 +258,54 @@ const GuestHome = () => {
       <section className="py-12 sm:py-16 lg:py-24 bg-white dark:bg-[#111621]">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
           <div className="mb-12 sm:mb-16 text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Quy trình đặt sân</h2>
-            <p className="mt-3 sm:mt-4 text-sm sm:text-base text-slate-600 dark:text-slate-400">Dễ dàng chỉ với 4 bước đơn giản</p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Quy trình đặt sân đơn giản</h2>
+            <p className="mt-3 sm:mt-4 text-sm sm:text-base text-slate-600 dark:text-slate-400">Bạn chỉ cần thực hiện 4 bước sau để bắt đầu trận cầu</p>
           </div>
           <div className="relative">
             <div className="absolute left-0 top-1/2 hidden h-0.5 w-full -translate-y-1/2 bg-slate-200 dark:bg-slate-700 md:block lg:w-[85%] lg:left-[7.5%]"></div>
             <div className="grid grid-cols-1 gap-8 sm:gap-12 md:grid-cols-4">
-              <div className="relative flex flex-col items-center text-center">
-                <div className="z-10 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 sm:ring-8 ring-white dark:ring-[#111621]">
-                  <span className="material-symbols-outlined text-2xl sm:text-3xl">search</span>
+              {/* Step 1 */}
+              <div className="relative flex flex-col items-center text-center group">
+                <div className="z-10 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-primary text-white shadow-[0_10px_20px_-5px_rgba(36,99,235,0.3)] ring-4 sm:ring-8 ring-white dark:ring-[#111621] transition-transform group-hover:-translate-y-1">
+                  <span className="material-symbols-outlined text-2xl sm:text-3xl">location_searching</span>
                 </div>
                 <h3 className="mt-4 sm:mt-6 text-base sm:text-lg font-bold text-slate-900 dark:text-white">1. Tìm sân</h3>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 px-2">Nhập khu vực và tìm sân phù hợp gần bạn nhất.</p>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 px-2 leading-relaxed">
+                  Nhập khu vực và tìm sân phù hợp gần bạn nhất.
+                </p>
               </div>
 
-              <div className="relative flex flex-col items-center text-center">
-                <div className="z-10 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-white border-2 border-primary text-primary shadow-lg ring-4 sm:ring-8 ring-white dark:bg-[#1a202c] dark:ring-[#111621]">
-                  <span className="material-symbols-outlined text-2xl sm:text-3xl">event_available</span>
+              {/* Step 2 */}
+              <div className="relative flex flex-col items-center text-center group">
+                <div className="z-10 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-primary text-white shadow-[0_10px_20px_-5px_rgba(36,99,235,0.3)] ring-4 sm:ring-8 ring-white dark:ring-[#111621] transition-transform group-hover:-translate-y-1">
+                  <span className="material-symbols-outlined text-2xl sm:text-3xl">schedule</span>
                 </div>
                 <h3 className="mt-4 sm:mt-6 text-base sm:text-lg font-bold text-slate-900 dark:text-white">2. Chọn giờ</h3>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 px-2">Xem lịch trống và chọn khung giờ mong muốn.</p>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 px-2 leading-relaxed">
+                  Lựa chọn ngày và khung giờ bạn muốn ra sân.
+                </p>
               </div>
 
-              <div className="relative flex flex-col items-center text-center">
-                <div className="z-10 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-white border-2 border-primary text-primary shadow-lg ring-4 sm:ring-8 ring-white dark:bg-[#1a202c] dark:ring-[#111621]">
-                  <span className="material-symbols-outlined text-2xl sm:text-3xl">payments</span>
+              {/* Step 3 */}
+              <div className="relative flex flex-col items-center text-center group">
+                <div className="z-10 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-primary text-white shadow-[0_10px_20px_-5px_rgba(36,99,235,0.3)] ring-4 sm:ring-8 ring-white dark:ring-[#111621] transition-transform group-hover:-translate-y-1">
+                  <span className="material-symbols-outlined text-2xl sm:text-3xl">price_check</span>
                 </div>
-                <h3 className="mt-4 sm:mt-6 text-base sm:text-lg font-bold text-slate-900 dark:text-white">3. Thanh toán</h3>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 px-2">Thanh toán trực tuyến an toàn và nhanh chóng.</p>
+                <h3 className="mt-4 sm:mt-6 text-base sm:text-lg font-bold text-slate-900 dark:text-white">3. Check giờ trống & giá cả</h3>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 px-2 leading-relaxed">
+                  Hệ thống tự động hiển thị giá minh bạch kèm các ưu đãi.
+                </p>
               </div>
 
-              <div className="relative flex flex-col items-center text-center">
-                <div className="z-10 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-secondary text-white shadow-lg ring-4 sm:ring-8 ring-white dark:ring-[#111621]">
-                  <span className="material-symbols-outlined text-2xl sm:text-3xl">qr_code_2</span>
+              {/* Step 4 */}
+              <div className="relative flex flex-col items-center text-center group">
+                <div className="z-10 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-secondary text-white shadow-[0_10px_20px_-5px_rgba(16,185,129,0.3)] ring-4 sm:ring-8 ring-white dark:ring-[#111621] transition-transform group-hover:-translate-y-1">
+                  <span className="material-symbols-outlined text-2xl sm:text-3xl">credit_score</span>
                 </div>
-                <h3 className="mt-4 sm:mt-6 text-base sm:text-lg font-bold text-slate-900 dark:text-white">4. Nhận mã</h3>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 px-2">Nhận mã đặt sân và đến sân trải nghiệm.</p>
+                <h3 className="mt-4 sm:mt-6 text-base sm:text-lg font-bold text-slate-900 dark:text-white">4. Thanh toán</h3>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 px-2 leading-relaxed">
+                  Xác nhận đặt sân và thanh toán trực tuyến an toàn.
+                </p>
               </div>
             </div>
           </div>

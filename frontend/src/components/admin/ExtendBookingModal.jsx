@@ -6,6 +6,7 @@ const ExtendBookingModal = ({ booking, onClose, onConfirm, loading }) => {
   const [error, setError] = useState('');
 
   const calculateNewEndTime = (minutes) => {
+    if (!booking?.endTime) return { hour: 0, minute: 0 };
     const [hours, mins] = booking.endTime.split(':').map(Number);
     const totalMinutes = hours * 60 + mins + minutes;
     const newHours = Math.floor(totalMinutes / 60);
@@ -31,7 +32,7 @@ const ExtendBookingModal = ({ booking, onClose, onConfirm, loading }) => {
     }
 
     const newEndTime = calculateNewEndTime(extensionMinutes);
-    onConfirm(extensionMinutes, newEndTime);
+    onConfirm(booking.bookingId, extensionMinutes, newEndTime);
   };
 
   const newEndTime = calculateNewEndTime(extensionMinutes);
@@ -96,8 +97,8 @@ const ExtendBookingModal = ({ booking, onClose, onConfirm, loading }) => {
                     setError('');
                   }}
                   className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${extensionMinutes === mins
-                      ? 'bg-purple-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                 >
                   {mins}p
@@ -108,23 +109,30 @@ const ExtendBookingModal = ({ booking, onClose, onConfirm, loading }) => {
 
           {/* Custom Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-bold text-gray-700 mb-2">
               Hoặc nhập số phút tùy chỉnh
             </label>
-            <input
-              type="number"
-              value={extensionMinutes}
-              onChange={(e) => {
-                setExtensionMinutes(Number(e.target.value));
-                setError('');
-              }}
-              min={15}
-              max={180}
-              step={15}
-              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Tối thiểu 15 phút, tối đa 180 phút (3 giờ)
+            <div className="relative">
+              <input
+                type="number"
+                value={extensionMinutes}
+                onChange={(e) => {
+                  setExtensionMinutes(Number(e.target.value));
+                  setError('');
+                }}
+                min={15}
+                max={180}
+                step={15}
+                placeholder="VD: 45"
+                className="w-full pl-4 pr-12 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all font-bold text-gray-900 placeholder:text-gray-400 outline-none"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 pointer-events-none">
+                phút
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-2 font-medium flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[14px]">info</span>
+              Tối thiểu 15 phút, tối đa 180 phút
             </p>
           </div>
 

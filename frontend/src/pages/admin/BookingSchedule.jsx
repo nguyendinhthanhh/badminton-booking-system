@@ -1,13 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import scheduleService from "../../services/scheduleService";
 import bookingService from "../../services/bookingService";
 import adminBookingService from "../../services/adminBookingService";
+import systemConfigService from "../../services/systemConfigService";
 import Toast from "../../components/common/Toast";
 import BookingDetailSkeleton from "../../components/common/BookingDetailSkeleton";
 import WalkInBookingModal from "../../components/admin/WalkInBookingModal";
 import useDataStore from "../../store/useDataStore";
 
 const BookingSchedule = () => {
+  // Helper: format Date to YYYY-MM-DD using LOCAL timezone (avoids UTC shift)
+  const formatLocalDate = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
   const {
     bookingSchedule: cachedSchedule,
     isCacheValid,
@@ -21,6 +29,7 @@ const BookingSchedule = () => {
   const [showBookingDetail, setShowBookingDetail] = useState(false);
 
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [calendarViewDate, setCalendarViewDate] = useState(new Date());
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -33,6 +42,21 @@ const BookingSchedule = () => {
   const [showExtendUI, setShowExtendUI] = useState(false);
   const [extensionMinutes, setExtensionMinutes] = useState(30);
   const [showWalkInModal, setShowWalkInModal] = useState(false);
+
+  // Dynamic start/end time state
+  const [startHour, setStartHour] = useState(5);
+  const [endHour, setEndHour] = useState(23);
+
+  // Staleness guard for date switching
+  const fetchIdRef = useRef(0);
+  const datePickerRef = useRef(null);
+
+  // Reset calendar view when date picker opens
+  useEffect(() => {
+    if (showDatePicker) {
+      setCalendarViewDate(new Date(selectedDate));
+    }
+  }, [showDatePicker]);
 
   // Update current time every second (Vietnam timezone)
   useEffect(() => {
@@ -63,22 +87,51 @@ const BookingSchedule = () => {
 
   // Fetch timeline data when date changes
   useEffect(() => {
-    fetchTimeline();
+    const dateStr = formatLocalDate(selectedDate);
+    fetchConfigs();
+    fetchTimeline(dateStr);
   }, [selectedDate]);
 
-  const fetchTimeline = async (forceRefresh = false) => {
-    // Check cache first
-    const dateStr = selectedDate.toISOString().split("T")[0];
-    const hasCachedData =
-      cachedSchedule.data &&
-      cachedSchedule.selectedDate === dateStr &&
-      isCacheValid(cachedSchedule.lastFetch);
+  const fetchConfigs = async () => {
+    try {
+      const configs = await systemConfigService.getAllConfigs();
+      if (configs.OPERATING_START) {
+        setStartHour(parseInt(configs.OPERATING_START.split(':')[0]));
+      }
+      if (configs.OPERATING_END) {
+        setEndHour(parseInt(configs.OPERATING_END.split(':')[0]));
+      }
+    } catch (error) {
+      console.error("Error fetching system configs:", error);
+    }
+  };
 
-    if (!forceRefresh && hasCachedData) {
-      console.log("Using cached booking schedule");
-      // Use cached data
-      const timelineData = cachedSchedule.data;
+  const fetchTimeline = useCallback(async (dateStr) => {
+    // 1. Increment fetch ID to invalidate any in-flight requests
+    const currentFetchId = ++fetchIdRef.current;
 
+    // 2. Clear current view immediately to prevent ghosting
+    setLoading(true);
+    setBookings([]);
+    setCourts([]);
+    setStats({ totalBookings: 0, dailyRevenue: 0 });
+
+    try {
+      // 3. Always fetch fresh data from API (no cache for date switches)
+      console.log("Fetching booking schedule from API for date:", dateStr);
+      const dateObj = new Date(dateStr + "T00:00:00");
+      const timelineData = await scheduleService.getTimeline(dateObj);
+
+      // 4. Staleness guard: only apply if this is still the latest fetch
+      if (currentFetchId !== fetchIdRef.current) {
+        console.log("Stale fetch detected, discarding results for:", dateStr);
+        return;
+      }
+
+      // Cache the new data
+      setBookingSchedule(timelineData, dateStr);
+
+      // 5. Process Data
       if (timelineData.courts) {
         const mappedCourts = timelineData.courts.map((court) => ({
           id: court.courtId,
@@ -92,8 +145,6 @@ const BookingSchedule = () => {
         timelineData.courts.forEach((court) => {
           if (court.slots) {
             court.slots.forEach((slot) => {
-              // Hiển thị booking đã PENDING, PENDING_PAYMENT, CONFIRMED, PLAYING, hoặc COMPLETED
-              // Bỏ qua nếu không có startTime hoặc endTime
               if (
                 (slot.status === "PENDING" ||
                   slot.status === "PENDING_PAYMENT" ||
@@ -110,70 +161,7 @@ const BookingSchedule = () => {
                   startTime: slot.startTime.substring(0, 5),
                   endTime: slot.endTime.substring(0, 5),
                   status: slot.status,
-                  customerName: slot.customerName || "Unknown",
-                  phone: slot.customerPhone,
-                  payment: slot.paymentStatus || "UNPAID",
-                  price: slot.totalPrice || 0,
-                });
-              }
-            });
-          }
-        });
-        setBookings(mappedBookings);
-      }
-
-      if (timelineData.statistics) {
-        setStats({
-          totalBookings: timelineData.statistics.bookedSlots || 0,
-          dailyRevenue: timelineData.statistics.totalRevenue || 0,
-        });
-      }
-
-      setLoading(false);
-      return;
-    }
-
-    // Fetch from API
-    console.log("Fetching booking schedule from API");
-    setLoading(true);
-    try {
-      // Timeline API already contains statistics
-      const timelineData = await scheduleService.getTimeline(selectedDate);
-
-      // Cache the data
-      setBookingSchedule(timelineData, dateStr);
-
-      if (timelineData.courts) {
-        const mappedCourts = timelineData.courts.map((court) => ({
-          id: court.courtId,
-          name: court.courtName,
-          type: court.courtType,
-          status: court.courtStatus,
-        }));
-        setCourts(mappedCourts);
-
-        const mappedBookings = [];
-        timelineData.courts.forEach((court) => {
-          if (court.slots) {
-            court.slots.forEach((slot) => {
-              // Hiển thị booking đã PENDING, PENDING_PAYMENT, CONFIRMED, PLAYING, hoặc COMPLETED
-              // Bỏ qua nếu không có startTime hoặc endTime
-              if (
-                (slot.status === "PENDING" ||
-                  slot.status === "PENDING_PAYMENT" ||
-                  slot.status === "CONFIRMED" ||
-                  slot.status === "PLAYING" ||
-                  slot.status === "COMPLETED") &&
-                slot.startTime &&
-                slot.endTime
-              ) {
-                mappedBookings.push({
-                  id: slot.bookingId,
-                  courtId: court.courtId,
-                  startTime: slot.startTime.substring(0, 5),
-                  endTime: slot.endTime.substring(0, 5),
-                  status: slot.status,
-                  customerName: slot.customerName || "Unknown",
+                  customerName: slot.customerName || "Không rõ",
                   phone: slot.customerPhone,
                   payment: slot.paymentStatus || "UNPAID",
                   price: slot.totalPrice || 0,
@@ -184,7 +172,6 @@ const BookingSchedule = () => {
         });
         console.log("Total courts:", mappedCourts.length);
         console.log("Total bookings found:", mappedBookings.length);
-        console.log("Bookings:", mappedBookings);
         setBookings(mappedBookings);
       }
 
@@ -195,27 +182,35 @@ const BookingSchedule = () => {
           dailyRevenue: timelineData.statistics.totalRevenue || 0,
         });
       }
+
     } catch (error) {
-      console.error("Error fetching data:", error);
-      showToast("Lỗi khi tải dữ liệu", "error");
+      // Only show error if this is still the latest fetch
+      if (currentFetchId === fetchIdRef.current) {
+        console.error("Error fetching data:", error);
+        showToast("Lỗi khi tải dữ liệu", "error");
+      }
     } finally {
-      setLoading(false);
+      // Only clear loading if this is still the latest fetch
+      if (currentFetchId === fetchIdRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [setBookingSchedule]);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
   };
 
   const timeSlots = [];
-  for (let hour = 6; hour <= 23; hour++) {
+  for (let hour = startHour; hour <= endHour; hour++) {
     timeSlots.push(`${hour.toString().padStart(2, "0")}:00`);
   }
 
   const formatDate = (date) => {
-    return date.toLocaleDateString("en-US", {
-      month: "long",
+    return date.toLocaleDateString("vi-VN", {
+      weekday: "long",
       day: "numeric",
+      month: "long",
       year: "numeric",
     });
   };
@@ -251,11 +246,11 @@ const BookingSchedule = () => {
   };
 
   const getBookingPosition = (startTime, endTime) => {
-    const [startHour, startMin] = startTime.split(":").map(Number);
-    const [endHour, endMin] = endTime.split(":").map(Number);
+    const [startHourTime, startMin] = startTime.split(":").map(Number);
+    const [endHourTime, endMin] = endTime.split(":").map(Number);
 
-    const startMinutes = (startHour - 6) * 60 + startMin;
-    const endMinutes = (endHour - 6) * 60 + endMin;
+    const startMinutes = (startHourTime - startHour) * 60 + startMin;
+    const endMinutes = (endHourTime - startHour) * 60 + endMin;
     const duration = endMinutes - startMinutes;
 
     const left = (startMinutes / 60) * 120;
@@ -275,10 +270,10 @@ const BookingSchedule = () => {
     const currentMin = currentTime.getMinutes();
     const currentSec = currentTime.getSeconds();
 
-    // Timeline starts at 6:00 AM and ends at 11:00 PM (23:00)
-    if (currentHour < 6 || currentHour >= 24) return null;
+    // Timeline starts at startHour:00 and ends at endHour:00
+    if (currentHour < startHour || currentHour > endHour) return null;
 
-    const totalSecondsFromStart = (currentHour - 6) * 3600 + currentMin * 60 + currentSec;
+    const totalSecondsFromStart = (currentHour - startHour) * 3600 + currentMin * 60 + currentSec;
 
     // Each hour is 120px wide, so position = (seconds / 3600) * 120
     const position = (totalSecondsFromStart / 3600) * 120;
@@ -380,7 +375,7 @@ const BookingSchedule = () => {
       setBookingDetail(normalizedDetail);
 
       // Refresh timeline
-      await fetchTimeline(true);
+      await fetchTimeline(selectedDate.toISOString().split('T')[0]);
     } catch (error) {
       console.error("Error updating status:", error);
       console.error("Error details:", error.response?.data);
@@ -395,19 +390,42 @@ const BookingSchedule = () => {
 
     try {
       setSavingBooking(true);
-      await scheduleService.extendBooking(bookingDetail.bookingId, {
-        extensionMinutes: extensionMinutes,
-      });
 
-      showToast("Gia hạn thành công", "success");
+      // Calculate new end time
+      let newEndTime = { hour: 0, minute: 0 };
+      if (bookingDetail.endTime) {
+        const [hours, mins] = bookingDetail.endTime.split(':').map(Number);
+        const totalMinutes = hours * 60 + mins + extensionMinutes;
+        const newHours = Math.floor(totalMinutes / 60);
+        const newMins = totalMinutes % 60;
+        newEndTime = { hour: newHours, minute: newMins };
+      }
+
+      await adminBookingService.extendBooking(
+        bookingDetail.bookingId,
+        extensionMinutes,
+        newEndTime
+      );
+
+      showToast(`Gia hạn thêm ${extensionMinutes} phút thành công`, "success");
       setShowExtendUI(false);
 
       // Refresh data
-      const updatedDetail = await scheduleService.getBookingDetail(
+      // Refresh data using the same API as handleBookingClick for consistency
+      const updatedDetail = await adminBookingService.getBookingById(
         bookingDetail.bookingId,
       );
-      setBookingDetail(updatedDetail);
-      await fetchTimeline(true);
+
+      // Normalize status fields
+      const currentStatus = updatedDetail.status || updatedDetail.bookingStatus || "";
+      const normalizedDetail = {
+        ...updatedDetail,
+        status: currentStatus,
+        bookingStatus: currentStatus
+      };
+      setBookingDetail(normalizedDetail);
+
+      await fetchTimeline(selectedDate.toISOString().split('T')[0]);
     } catch (error) {
       console.error("Error extending booking:", error);
       showToast("Lỗi khi gia hạn", "error");
@@ -426,14 +444,14 @@ const BookingSchedule = () => {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-                Court Schedule
+                Lịch đặt sân
               </h1>
               <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm border border-green-200">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </span>
-                Live
+                Trực tiếp
               </div>
             </div>
             <div className="flex items-center gap-2 mt-1.5">
@@ -441,7 +459,7 @@ const BookingSchedule = () => {
               <p className="text-gray-700 text-base font-black tracking-tight">
                 {currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 <span className="mx-3 text-gray-300">|</span>
-                <span className="text-gray-500 text-sm font-bold">System monitoring active</span>
+                <span className="text-gray-500 text-sm font-bold">Hệ thống đang hoạt động</span>
               </p>
             </div>
           </div>
@@ -454,35 +472,28 @@ const BookingSchedule = () => {
                 chevron_left
               </span>
             </button>
-            <div className="relative date-picker-container">
+            <div className="relative date-picker-container" ref={datePickerRef}>
               <button
                 onClick={() => setShowDatePicker(!showDatePicker)}
-                className="flex items-center gap-3 px-4 py-2 bg-white border-2 border-purple-50 rounded-xl hover:border-purple-200 transition-all shadow-sm group"
+                className="flex items-center gap-3 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl transition-all duration-200 group border border-slate-200"
               >
-                <div className="w-8 h-8 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                  <span className="material-symbols-outlined text-xl">
-                    calendar_today
-                  </span>
+                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm text-indigo-600 group-hover:text-indigo-700">
+                  <span className="material-symbols-outlined text-lg">calendar_today</span>
                 </div>
                 <div className="text-left">
-                  <div className="text-[10px] font-black text-gray-400 uppercase leading-none mb-0.5">Selected Date</div>
-                  <div className="font-bold text-gray-900 text-sm leading-none">
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                    Ngày đang xem
+                  </p>
+                  <p className="text-sm font-black text-slate-900">
                     {formatDate(selectedDate)}
-                  </div>
+                  </p>
                 </div>
+                <span className={`material-symbols-outlined text-slate-400 transition-transform duration-200 ${showDatePicker ? "rotate-180" : ""}`}>
+                  expand_more
+                </span>
               </button>
 
-              {/* Date Picker Dropdown */}
-              {showDatePicker && (
-                <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 p-4 animate-in fade-in zoom-in duration-200 origin-top-right">
-                  <input
-                    type="date"
-                    value={selectedDate.toISOString().split("T")[0]}
-                    onChange={(e) => handleDateSelect(new Date(e.target.value))}
-                    className="w-full px-4 py-3 border border-gray-100 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-bold text-gray-900"
-                  />
-                </div>
-              )}
+              {/* Calendar dropdown is rendered as overlay modal below */}
             </div>
             <button
               onClick={() => changeDate(1)}
@@ -497,7 +508,7 @@ const BookingSchedule = () => {
               onClick={goToToday}
               className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-black hover:bg-purple-600 transition-all active:scale-95 hover:shadow-lg hover:shadow-purple-100 uppercase tracking-widest"
             >
-              Today
+              Hôm nay
             </button>
             <div className="w-px h-6 bg-gray-200 mx-2"></div>
             <button
@@ -520,9 +531,9 @@ const BookingSchedule = () => {
                 <span className="material-symbols-outlined">analytics</span>
               </div>
               <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Day</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ngày đang xem</p>
                 <h3 className="text-2xl font-black text-gray-900 leading-none">{stats.totalBookings}</h3>
-                <p className="text-xs text-purple-600 font-bold mt-1 tracking-tight">Total reservations</p>
+                <p className="text-xs text-purple-600 font-bold mt-1 tracking-tight">Tổng lượt đặt</p>
               </div>
             </div>
           </div>
@@ -535,12 +546,12 @@ const BookingSchedule = () => {
                 <span className="material-symbols-outlined">payments</span>
               </div>
               <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Revenue</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Doanh thu</p>
                 <h3 className="text-2xl font-black text-gray-900 leading-none">
                   {stats.dailyRevenue.toLocaleString('vi-VN')}
                   <span className="text-xs font-bold text-gray-400 ml-1 underline decoration-emerald-500/30">đ</span>
                 </h3>
-                <p className="text-xs text-emerald-600 font-bold mt-1 tracking-tight">Daily total earned</p>
+                <p className="text-xs text-emerald-600 font-bold mt-1 tracking-tight">Tổng doanh thu trong ngày</p>
               </div>
             </div>
           </div>
@@ -553,12 +564,12 @@ const BookingSchedule = () => {
                 <span className="material-symbols-outlined">sports_tennis</span>
               </div>
               <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Courts</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sân hoạt động</p>
                 <h3 className="text-2xl font-black text-gray-900 leading-none">
                   {courts.filter(c => c.status === 'ACTIVE').length}
                   <span className="text-sm text-gray-400 ml-1">/ {courts.length}</span>
                 </h3>
-                <p className="text-xs text-blue-600 font-bold mt-1 tracking-tight">Available for play</p>
+                <p className="text-xs text-blue-600 font-bold mt-1 tracking-tight">Sẵn sàng sử dụng</p>
               </div>
             </div>
           </div>
@@ -571,11 +582,11 @@ const BookingSchedule = () => {
                 <span className="material-symbols-outlined">percent</span>
               </div>
               <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Occupancy</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tỷ lệ sử dụng</p>
                 <h3 className="text-2xl font-black text-gray-900 leading-none">
                   {courts.length > 0 ? Math.round((bookings.length / (courts.length * (timeSlots.length * 2))) * 100) : 0}%
                 </h3>
-                <p className="text-xs text-amber-600 font-bold mt-1 tracking-tight">Utilization rate</p>
+                <p className="text-xs text-amber-600 font-bold mt-1 tracking-tight">Mức sử dụng sân</p>
               </div>
             </div>
           </div>
@@ -688,7 +699,7 @@ const BookingSchedule = () => {
                   {/* Fixed Court Label - STICKY at left */}
                   <div className="flex-shrink-0 w-52 bg-gray-50/50 px-6 py-4 border-r border-gray-100 sticky left-0 z-40 backdrop-blur-md">
                     <span className="font-black text-[10px] text-gray-400 uppercase tracking-widest">
-                      Resource / Court
+                      Sân
                     </span>
                   </div>
 
@@ -728,7 +739,7 @@ const BookingSchedule = () => {
                             }`}>
                             {court.type}
                           </span>
-                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Active</span>
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{court.status === 'ACTIVE' ? 'Đang HĐ' : 'Ngừng HĐ'}</span>
                         </div>
                       </div>
                     ))}
@@ -747,7 +758,7 @@ const BookingSchedule = () => {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
                           </span>
-                          NOW
+                          BÂY GIỜ
                         </div>
                         <div className="w-0.5 h-full bg-red-600 relative">
                           <div className="absolute top-0 bottom-0 left-[-6px] right-[-6px] bg-red-600/10"></div>
@@ -789,7 +800,7 @@ const BookingSchedule = () => {
                               shadow: "shadow-blue-200",
                               border: "border-blue-400/20",
                               icon: "event",
-                              label: "Confirmed"
+                              label: "Đã xác nhận"
                             };
 
                             if (booking.status === "PENDING") {
@@ -798,7 +809,7 @@ const BookingSchedule = () => {
                                 shadow: "shadow-amber-200",
                                 border: "border-amber-400/20",
                                 icon: "hourglass_empty",
-                                label: "Pending"
+                                label: "Chờ xử lý"
                               };
                             } else if (booking.status === "PLAYING") {
                               statusConfig = {
@@ -806,7 +817,7 @@ const BookingSchedule = () => {
                                 shadow: "shadow-purple-200",
                                 border: "border-purple-400/20",
                                 icon: "sports_tennis",
-                                label: "Playing"
+                                label: "Đang chơi"
                               };
                             } else if (booking.status === "COMPLETED") {
                               statusConfig = {
@@ -814,7 +825,7 @@ const BookingSchedule = () => {
                                 shadow: "shadow-emerald-200",
                                 border: "border-emerald-400/20",
                                 icon: "check_circle",
-                                label: "Finished"
+                                label: "Hoàn thành"
                               };
                             }
 
@@ -829,11 +840,11 @@ const BookingSchedule = () => {
                               if (diffToEnd < 0) {
                                 statusConfig.bg = "from-red-600 to-red-700 animate-pulse";
                                 statusConfig.shadow = "shadow-red-200";
-                                timeStatus = "OVERTIME";
+                                timeStatus = "QUÁ GIỜ";
                               } else if (diffToEnd < 15 * 60000) {
                                 statusConfig.bg = "from-orange-500 to-orange-600";
                                 statusConfig.shadow = "shadow-orange-200";
-                                timeStatus = `${Math.floor(diffToEnd / 60000)}m left`;
+                                timeStatus = `Còn ${Math.floor(diffToEnd / 60000)}p`;
                               }
                             }
 
@@ -995,7 +1006,17 @@ const BookingSchedule = () => {
                                     : "text-gray-700"
                               }`}
                           >
-                            {bookingDetail.bookingStatus}
+                            {bookingDetail.bookingStatus === "CONFIRMED"
+                              ? "Đã xác nhận"
+                              : bookingDetail.bookingStatus === "PENDING"
+                                ? "Đang chờ"
+                                : bookingDetail.bookingStatus === "PLAYING"
+                                  ? "Đang chơi"
+                                  : bookingDetail.bookingStatus === "CANCELLED"
+                                    ? "Đã hủy"
+                                    : bookingDetail.bookingStatus === "COMPLETED"
+                                      ? "Đã hoàn thành"
+                                      : bookingDetail.bookingStatus}
                           </p>
                         </div>
                       </div>
@@ -1009,7 +1030,26 @@ const BookingSchedule = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Cancellation Reason */}
+                    {bookingDetail.notes && (bookingDetail.bookingStatus === 'CANCELLATION_REQUESTED' || bookingDetail.bookingStatus === 'CANCELLED') && (
+                      <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-start gap-3">
+                        <span className="material-symbols-outlined text-orange-600 mt-0.5">warning</span>
+                        <div>
+                          <p className="text-sm font-bold text-orange-800 mb-1">Lý do hủy</p>
+                          <p className="text-sm text-orange-700">
+                            {bookingDetail.notes
+                              .split('\n')
+                              .filter(line => line.includes('Cancellation requested by user:') || line.includes('Cancelled by'))
+                              .map(line => line.replace('Cancellation requested by user:', '').replace('Cancelled by user:', '').replace('Cancelled by admin:', '').trim())
+                              .filter(Boolean)
+                              .join(', ') || bookingDetail.notes}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Customer & Court Info - Side by side */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Customer Info */}
                       <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
                         <h4 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -1307,191 +1347,293 @@ const BookingSchedule = () => {
               </div>
 
               {/* Footer / Status Flow Actions */}
-              {bookingDetail && !loadingDetail && (
-                <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-3 items-center justify-center">
-                  {savingBooking ? (
-                    <div className="flex items-center gap-3 text-gray-500 px-8 py-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
-                      <span className="font-semibold text-sm">Đang cập nhật...</span>
-                    </div>
-                  ) : (
-                    /* VIEW MODE ACTIONS */
-                    <>
-                      {/* PENDING -> CONFIRMED */}
-                      {(bookingDetail.status === "PENDING" || bookingDetail.bookingStatus === "PENDING") && (
-                        <button
-                          onClick={() => handleUpdateStatus("CONFIRMED")}
-                          className="flex-1 min-w-[150px] py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg shadow-green-200 transition-all font-bold text-sm flex items-center justify-center gap-2"
-                        >
-                          <span className="material-symbols-outlined text-lg">verified</span>
-                          Xác nhận đặt sân
-                        </button>
-                      )}
-
-                      {/* CONFIRMED -> PLAYING (Check-in) */}
-                      {/* Debug: Current status = {bookingDetail.status} / {bookingDetail.bookingStatus} */}
-                      {(bookingDetail.status === "CONFIRMED" || bookingDetail.bookingStatus === "CONFIRMED") && (
-                        <>
+              {
+                bookingDetail && !loadingDetail && (
+                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap gap-3 items-center justify-center">
+                    {savingBooking ? (
+                      <div className="flex items-center gap-3 text-gray-500 px-8 py-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                        <span className="font-semibold text-sm">Đang cập nhật...</span>
+                      </div>
+                    ) : (
+                      /* VIEW MODE ACTIONS */
+                      <>
+                        {/* PENDING -> CONFIRMED */}
+                        {(bookingDetail.status === "PENDING" || bookingDetail.bookingStatus === "PENDING") && (
                           <button
-                            onClick={() => handleUpdateStatus("PLAYING")}
-                            className="flex-1 min-w-[150px] py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-200 transition-all font-bold text-sm flex items-center justify-center gap-2"
+                            onClick={() => handleUpdateStatus("CONFIRMED")}
+                            className="flex-1 min-w-[150px] py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg shadow-green-200 transition-all font-bold text-sm flex items-center justify-center gap-2"
                           >
-                            <span className="material-symbols-outlined text-lg">check_circle</span>
-                            Check-in
-                          </button>
-                          <button
-                            onClick={() => setShowCancelModal(true)}
-                            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-white border-2 border-rose-100 text-rose-600 rounded-xl hover:bg-rose-50 transition-all font-bold text-sm"
-                          >
-                            <span className="material-symbols-outlined text-lg">cancel</span>
-                            Hủy đơn
-                          </button>
-                        </>
-                      )}
-
-                      {/* PLAYING -> COMPLETED */}
-                      {(bookingDetail.status === "PLAYING" || bookingDetail.bookingStatus === "PLAYING") && (
-                        <button
-                          onClick={() => handleUpdateStatus("COMPLETED")}
-                          className="flex-1 min-w-[150px] py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-purple-200 transition-all font-bold text-sm flex items-center justify-center gap-2"
-                        >
-                          <span className="material-symbols-outlined text-lg">task_alt</span>
-                          Hoàn thành (Check-out)
-                        </button>
-                      )}
-
-                      {/* Extension Feature (Only for CONFIRMED or PLAYING) */}
-                      {(bookingDetail.status === "CONFIRMED" || bookingDetail.bookingStatus === "CONFIRMED" ||
-                        bookingDetail.status === "PLAYING" || bookingDetail.bookingStatus === "PLAYING") && !showExtendUI && (
-                          <button
-                            onClick={() => setShowExtendUI(true)}
-                            className="flex-1 min-w-[150px] py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-lg shadow-amber-200 transition-all font-bold text-sm flex items-center justify-center gap-2"
-                          >
-                            <span className="material-symbols-outlined text-lg">history</span>
-                            Gia hạn
+                            <span className="material-symbols-outlined text-lg">verified</span>
+                            Xác nhận đặt sân
                           </button>
                         )}
-                    </>
-                  )}
 
-                  {/* Inline Extension UI */}
-                  {showExtendUI && (
-                    <div className="w-full bg-amber-50 rounded-2xl p-4 border border-amber-200 animate-in slide-in-from-bottom duration-300">
-                      <div className="flex items-center justify-between mb-4">
-                        <h5 className="text-sm font-black text-amber-800 flex items-center gap-2">
-                          <span className="material-symbols-outlined text-lg">history</span>
-                          Gia hạn thời gian chơi
-                        </h5>
-                        <button
-                          onClick={() => setShowExtendUI(false)}
-                          className="text-amber-400 hover:text-amber-600"
-                        >
-                          <span className="material-symbols-outlined text-lg">close</span>
-                        </button>
-                      </div>
+                        {/* CONFIRMED -> PLAYING (Check-in) */}
+                        {/* Debug: Current status = {bookingDetail.status} / {bookingDetail.bookingStatus} */}
+                        {(bookingDetail.status === "CONFIRMED" || bookingDetail.bookingStatus === "CONFIRMED") && (
+                          <>
+                            <button
+                              onClick={() => handleUpdateStatus("PLAYING")}
+                              className="flex-1 min-w-[150px] py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-200 transition-all font-bold text-sm flex items-center justify-center gap-2"
+                            >
+                              <span className="material-symbols-outlined text-lg">check_circle</span>
+                              Check-in
+                            </button>
+                            <button
+                              onClick={() => setShowCancelModal(true)}
+                              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-white border-2 border-rose-100 text-rose-600 rounded-xl hover:bg-rose-50 transition-all font-bold text-sm"
+                            >
+                              <span className="material-symbols-outlined text-lg">cancel</span>
+                              Hủy đơn
+                            </button>
+                          </>
+                        )}
 
-                      <div className="grid grid-cols-3 gap-3 mb-4">
-                        {[30, 60, 90].map(mins => (
+                        {/* PLAYING -> COMPLETED */}
+                        {(bookingDetail.status === "PLAYING" || bookingDetail.bookingStatus === "PLAYING") && (
                           <button
-                            key={mins}
-                            onClick={() => setExtensionMinutes(mins)}
-                            className={`py-2 rounded-xl text-xs font-bold transition-all ${extensionMinutes === mins
-                              ? "bg-amber-600 text-white shadow-md"
-                              : "bg-white text-amber-700 border border-amber-200 hover:border-amber-400"
-                              }`}
+                            onClick={() => handleUpdateStatus("COMPLETED")}
+                            className="flex-1 min-w-[150px] py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-purple-200 transition-all font-bold text-sm flex items-center justify-center gap-2"
                           >
-                            +{mins} phút
+                            <span className="material-symbols-outlined text-lg">task_alt</span>
+                            Hoàn thành (Check-out)
                           </button>
-                        ))}
-                      </div>
+                        )}
 
-                      <div className="flex gap-2">
-                        <button
-                          disabled={savingBooking}
-                          onClick={handleExtendBooking}
-                          className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-200"
-                        >
-                          {savingBooking ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          ) : (
-                            <>
-                              <span className="material-symbols-outlined text-lg">add_task</span>
-                              Xác nhận gia hạn
-                            </>
+                        {/* Extension Feature (Only for CONFIRMED or PLAYING) */}
+                        {(bookingDetail.status === "CONFIRMED" || bookingDetail.bookingStatus === "CONFIRMED" ||
+                          bookingDetail.status === "PLAYING" || bookingDetail.bookingStatus === "PLAYING") && !showExtendUI && (
+                            <button
+                              onClick={() => setShowExtendUI(true)}
+                              className="flex-1 min-w-[150px] py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-lg shadow-amber-200 transition-all font-bold text-sm flex items-center justify-center gap-2"
+                            >
+                              <span className="material-symbols-outlined text-lg">history</span>
+                              Gia hạn
+                            </button>
                           )}
-                        </button>
+                      </>
+                    )}
+
+                    {/* Inline Extension UI */}
+                    {showExtendUI && (
+                      <div className="w-full bg-amber-50 rounded-2xl p-4 border border-amber-200 animate-in slide-in-from-bottom duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                          <h5 className="text-sm font-black text-amber-800 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-lg">history</span>
+                            Gia hạn thời gian chơi
+                          </h5>
+                          <button
+                            onClick={() => setShowExtendUI(false)}
+                            className="text-amber-400 hover:text-amber-600"
+                          >
+                            <span className="material-symbols-outlined text-lg">close</span>
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3 mb-4">
+                          {[30, 60, 90].map(mins => (
+                            <button
+                              key={mins}
+                              onClick={() => setExtensionMinutes(mins)}
+                              className={`py-2 rounded-xl text-xs font-bold transition-all ${extensionMinutes === mins
+                                ? "bg-amber-600 text-white shadow-md"
+                                : "bg-white text-amber-700 border border-amber-200 hover:border-amber-400"
+                                }`}
+                            >
+                              +{mins} phút
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            disabled={savingBooking}
+                            onClick={handleExtendBooking}
+                            className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-200"
+                          >
+                            {savingBooking ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            ) : (
+                              <>
+                                <span className="material-symbols-outlined text-lg">add_task</span>
+                                Xác nhận gia hạn
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+                    )}
+                  </div>
+                )
+              }
+            </div >
+          </div >
+        </div >
+      )
+      }
 
       {/* Modal xác nhận hủy đơn */}
-      {showCancelModal && bookingDetail && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
-            onClick={() => !savingBooking && setShowCancelModal(false)}
-          ></div>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md transform transition-all relative z-10 overflow-hidden border border-red-100">
-            {/* Header cảnh báo */}
-            <div className="bg-red-50 p-6 flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4 animate-bounce">
-                <span className="material-symbols-outlined text-4xl">warning</span>
+      {
+        showCancelModal && bookingDetail && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+              onClick={() => !savingBooking && setShowCancelModal(false)}
+            ></div>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md transform transition-all relative z-10 overflow-hidden border border-red-100">
+              {/* Header cảnh báo */}
+              <div className="bg-red-50 p-6 flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                  <span className="material-symbols-outlined text-4xl">warning</span>
+                </div>
+                <h3 className="text-xl font-black text-gray-900">Xác nhận Hủy Đơn</h3>
+                <p className="text-sm text-red-600 font-medium mt-1">Cảnh báo: Hành động này không thể hoàn tác!</p>
               </div>
-              <h3 className="text-xl font-black text-gray-900">Xác nhận Hủy Đơn</h3>
-              <p className="text-sm text-red-600 font-medium mt-1">Cảnh báo: Hành động này không thể hoàn tác!</p>
+
+              {/* Content chi tiết */}
+              <div className="p-6">
+                <div className="bg-gray-50 rounded-2xl p-4 space-y-3 mb-6">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-gray-400 uppercase">Mã đặt sân</span>
+                    <span className="text-sm font-black text-gray-900">#{bookingDetail.bookingId}</span>
+                  </div>
+                  <div className="h-px bg-gray-200"></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-gray-400 uppercase">Khách hàng</span>
+                    <span className="text-sm font-bold text-gray-900">{bookingDetail.customerName}</span>
+                  </div>
+                  <div className="h-px bg-gray-200"></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-gray-400 uppercase">Sân</span>
+                    <span className="text-sm font-bold text-gray-900">{bookingDetail.courtName}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <button
+                    disabled={savingBooking}
+                    onClick={() => {
+                      handleUpdateStatus("CANCELLED");
+                      setShowCancelModal(false);
+                    }}
+                    className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl shadow-lg shadow-red-200 transition-all font-black text-sm flex items-center justify-center gap-2"
+                  >
+                    {savingBooking ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined">delete_forever</span>
+                        XÁC NHẬN HỦY NGAY
+                      </>
+                    )}
+                  </button>
+                  <button
+                    disabled={savingBooking}
+                    onClick={() => setShowCancelModal(false)}
+                    className="w-full py-3.5 bg-white border-2 border-gray-100 text-gray-500 hover:bg-gray-50 rounded-2xl transition-all font-bold text-sm"
+                  >
+                    Giữ lại đơn đặt sân
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Date Picker Calendar Overlay */}
+      {showDatePicker && (
+        <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-32" onClick={() => setShowDatePicker(false)}>
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+          <div
+            className="relative p-5 bg-white rounded-2xl shadow-2xl border border-slate-200 w-80 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-slate-800 text-base">
+                {calendarViewDate.toLocaleDateString("vi-VN", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </h3>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => {
+                    const newDate = new Date(calendarViewDate);
+                    newDate.setMonth(newDate.getMonth() - 1);
+                    setCalendarViewDate(newDate);
+                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">chevron_left</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const newDate = new Date(calendarViewDate);
+                    newDate.setMonth(newDate.getMonth() + 1);
+                    setCalendarViewDate(newDate);
+                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">chevron_right</span>
+                </button>
+              </div>
             </div>
 
-            {/* Content chi tiết */}
-            <div className="p-6">
-              <div className="bg-gray-50 rounded-2xl p-4 space-y-3 mb-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-gray-400 uppercase">Mã đặt sân</span>
-                  <span className="text-sm font-black text-gray-900">#{bookingDetail.bookingId}</span>
+            <div className="grid grid-cols-7 gap-1 text-center mb-2">
+              {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((day) => (
+                <div key={day} className="text-[10px] font-bold text-slate-400 uppercase">
+                  {day}
                 </div>
-                <div className="h-px bg-gray-200"></div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-gray-400 uppercase">Khách hàng</span>
-                  <span className="text-sm font-bold text-gray-900">{bookingDetail.customerName}</span>
-                </div>
-                <div className="h-px bg-gray-200"></div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-gray-400 uppercase">Sân</span>
-                  <span className="text-sm font-bold text-gray-900">{bookingDetail.courtName}</span>
-                </div>
-              </div>
+              ))}
+            </div>
 
-              <div className="flex flex-col gap-3">
-                <button
-                  disabled={savingBooking}
-                  onClick={() => {
-                    handleUpdateStatus("CANCELLED");
-                    setShowCancelModal(false);
-                  }}
-                  className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl shadow-lg shadow-red-200 transition-all font-black text-sm flex items-center justify-center gap-2"
-                >
-                  {savingBooking ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined">delete_forever</span>
-                      XÁC NHẬN HỦY NGAY
-                    </>
-                  )}
-                </button>
-                <button
-                  disabled={savingBooking}
-                  onClick={() => setShowCancelModal(false)}
-                  className="w-full py-3.5 bg-white border-2 border-gray-100 text-gray-500 hover:bg-gray-50 rounded-2xl transition-all font-bold text-sm"
-                >
-                  Giữ lại đơn đặt sân
-                </button>
-              </div>
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), 1).getDay() }).map((_, i) => (
+                <div key={`empty-${i}`} />
+              ))}
+              {Array.from({ length: new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 0).getDate() }).map((_, i) => {
+                const day = i + 1;
+                const date = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), day);
+                const isSelected = date.toDateString() === selectedDate.toDateString();
+                const isToday = date.toDateString() === new Date().toDateString();
+
+                return (
+                  <button
+                    key={day}
+                    onClick={() => {
+                      setSelectedDate(date);
+                      setShowDatePicker(false);
+                    }}
+                    className={`
+                      h-9 w-9 rounded-lg text-sm font-bold flex items-center justify-center transition-all
+                      ${isSelected ? "bg-indigo-600 text-white shadow-md shadow-indigo-200" : "text-slate-700 hover:bg-slate-100"}
+                      ${isToday && !isSelected ? "text-indigo-600 bg-indigo-50" : ""}
+                    `}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between">
+              <button
+                onClick={() => {
+                  setSelectedDate(new Date());
+                  setShowDatePicker(false);
+                }}
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-colors"
+              >
+                Hôm nay
+              </button>
+              <button
+                onClick={() => setShowDatePicker(false)}
+                className="text-xs font-bold text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                Đóng
+              </button>
             </div>
           </div>
         </div>
@@ -1503,20 +1645,22 @@ const BookingSchedule = () => {
         onClose={() => setShowWalkInModal(false)}
         onSuccess={() => {
           showToast('Đã tạo đặt sân tại quầy thành công');
-          fetchTimeline(true);
+          fetchTimeline(formatLocalDate(selectedDate));
         }}
         courts={courts}
       />
 
       {/* Toast Notification */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-    </div>
+      {
+        toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )
+      }
+    </div >
   );
 };
 

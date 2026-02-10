@@ -148,7 +148,9 @@ const MyBookings = () => {
   };
 
   const calculateTotalAmount = () => {
-    return filteredBookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
+    return filteredBookings
+      .filter((b) => b.status === 'COMPLETED')
+      .reduce((sum, booking) => sum + booking.totalPrice, 0);
   };
 
   const formatCurrency = (amount) => {
@@ -292,26 +294,29 @@ const MyBookings = () => {
         </div>
 
         {/* Summary Stats */}
-        {!loading && filteredBookings.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <p className="text-sm text-gray-600 mb-1">Tổng số lượt đặt</p>
-              <p className="text-2xl font-bold text-gray-900">{filteredBookings.length}</p>
+        {!loading && filteredBookings.length > 0 && (() => {
+          const completedBookings = filteredBookings.filter((b) => b.status === 'COMPLETED');
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <p className="text-sm text-gray-600 mb-1">Tổng số lượt đặt (hoàn thành)</p>
+                <p className="text-2xl font-bold text-gray-900">{completedBookings.length}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <p className="text-sm text-gray-600 mb-1">Tổng thời gian</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {completedBookings.reduce((sum, b) => sum + b.durationMinutes, 0)} phút
+                </p>
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <p className="text-sm text-gray-600 mb-1">Tổng chi phí</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(calculateTotalAmount())}
+                </p>
+              </div>
             </div>
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <p className="text-sm text-gray-600 mb-1">Tổng thời gian</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {filteredBookings.reduce((sum, b) => sum + b.durationMinutes, 0)} phút
-              </p>
-            </div>
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <p className="text-sm text-gray-600 mb-1">Tổng chi phí</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {formatCurrency(calculateTotalAmount())}
-              </p>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Loading State */}
         {loading && (

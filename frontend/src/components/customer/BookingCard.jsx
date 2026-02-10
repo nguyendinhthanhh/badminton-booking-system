@@ -118,63 +118,79 @@ const BookingCard = ({ booking, onCancel }) => {
           </div>
         </div>
 
+        {/* Detailed Time Breakdown */}
         <div className="flex items-start space-x-3">
           <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm text-gray-500">Thời gian</p>
-            <p className="font-semibold text-gray-900">
-              {formatTimeObject(booking.startTime)} - {formatTimeObject(booking.actualEndTime || booking.endTime)}
-              <span className="text-sm text-gray-500 ml-2">
-                ({booking.durationMinutes} phút)
-              </span>
-            </p>
+            <div className="flex flex-col gap-1">
+              {/* Original Time */}
+              <p className="font-semibold text-gray-900">
+                {booking.startTime && booking.endTime
+                  ? `${formatTimeObject(booking.startTime)} - ${booking.extensions && booking.extensions.length > 0
+                    ? formatTimeObject(booking.extensions[0].originalEndTime)
+                    : formatTimeObject(booking.actualEndTime || booking.endTime)
+                  }`
+                  : booking.openEnded
+                    ? 'Chưa kết thúc'
+                    : 'Chưa xác định'
+                }
+                <span className="text-sm text-gray-500 ml-2 font-normal">
+                  ({
+                    booking.extensions && booking.extensions.length > 0
+                      ? (booking.durationMinutes || 0) - booking.extensions.reduce((sum, e) => sum + e.extensionMinutes, 0)
+                      : booking.durationMinutes
+                  } phút)
+                </span>
+              </p>
+
+              {/* Extensions Detail */}
+              {booking.extensions && booking.extensions.length > 0 && (
+                <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded-md border border-blue-100 mt-1">
+                  {booking.extensions.map((ext, idx) => (
+                    <div key={idx} className="flex justify-between items-center">
+                      <span>
+                        + {ext.extensionMinutes}p ({formatTimeObject(ext.originalEndTime)} - {formatTimeObject(ext.extendedEndTime)})
+                      </span>
+                      <span className="font-bold">{formatCurrency(ext.extensionFee)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Price Breakdown */}
-        {booking.priceBreakdown && booking.priceBreakdown.length > 0 && (
-          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-            <p className="text-sm font-semibold text-gray-700">Chi tiết giá:</p>
-            {booking.priceBreakdown.map((period, index) => (
-              <div key={index} className="flex justify-between text-sm">
-                <span className="text-gray-600">
-                  {formatTimeObject(period.periodStart)} - {formatTimeObject(period.periodEnd)}
-                  <span className="text-xs text-gray-500 ml-1">
-                    ({period.dayType === 'WEEKDAY' ? 'Ngày thường' : 'Cuối tuần'})
-                  </span>
-                </span>
-                <span className="font-medium text-gray-900">
-                  {formatCurrency(period.subtotal)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Overtime */}
-        {booking.overtimeMinutes > 0 && (
-          <div className="flex items-start space-x-3 bg-orange-50 rounded-lg p-3">
-            <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm text-orange-700">
-                Phụ phí thời gian: {booking.overtimeMinutes} phút
-              </p>
-              <p className="font-semibold text-orange-900">
-                {formatCurrency(booking.overtimeFee)}
-              </p>
+        {/* Price Breakdown Summary */}
+        {(booking.priceBreakdown?.length > 0 || booking.overtimeMinutes > 0) && (
+          <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm mt-2">
+            {/* Original Price */}
+            <div className="flex justify-between">
+              <span className="text-gray-600">Giá gốc:</span>
+              <span className="font-medium text-gray-900">
+                {formatCurrency(
+                  booking.totalPrice
+                  - (booking.overtimeFee || 0)
+                  - (booking.extensions ? booking.extensions.reduce((sum, e) => sum + e.extensionFee, 0) : 0)
+                )}
+              </span>
             </div>
-          </div>
-        )}
 
-        {/* Extensions */}
-        {booking.extensions && booking.extensions.length > 0 && (
-          <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-sm font-semibold text-blue-700 mb-2">Gia hạn:</p>
-            {booking.extensions.map((ext, index) => (
-              <div key={index} className="text-sm text-blue-600">
-                + {ext.extensionMinutes} phút ({formatCurrency(ext.extensionFee)})
+            {/* Extension Total */}
+            {booking.extensions && booking.extensions.length > 0 && (
+              <div className="flex justify-between text-blue-600">
+                <span>Phí gia hạn:</span>
+                <span className="font-bold">{formatCurrency(booking.extensions.reduce((sum, e) => sum + e.extensionFee, 0))}</span>
               </div>
-            ))}
+            )}
+
+            {/* Overtime */}
+            {booking.overtimeMinutes > 0 && (
+              <div className="flex justify-between text-orange-600">
+                <span>Phí quá giờ ({booking.overtimeMinutes}p):</span>
+                <span className="font-bold">{formatCurrency(booking.overtimeFee)}</span>
+              </div>
+            )}
           </div>
         )}
 
