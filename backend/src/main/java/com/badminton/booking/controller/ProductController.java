@@ -63,4 +63,46 @@ public class ProductController {
         productService.deleteProductInWarehouse(warehouseId, productId);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "List shuttlecocks by warehouse")
+    @GetMapping("/warehouse/{warehouseId}/shuttlecocks")
+    public ResponseEntity<Page<ProductResponse>> listShuttlecocks(
+            @PathVariable Integer warehouseId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Page<ProductResponse> responses = productService.getShuttlecocksByWarehouse(warehouseId, page, size);
+        return ResponseEntity.ok(responses);
+    }
+
+    @Operation(summary = "Create shuttlecock in warehouse")
+    @PostMapping("/warehouse/{warehouseId}/shuttlecocks")
+    public ResponseEntity<ProductResponse> createShuttlecock(
+            @PathVariable Integer warehouseId,
+            @Valid @RequestBody ProductCreateRequest request) {
+
+        ProductResponse response = productService.createShuttlecockInWarehouse(warehouseId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Update shuttlecock in warehouse")
+    @PutMapping("/warehouse/{warehouseId}/shuttlecocks/{productId}")
+    public ResponseEntity<Void> updateShuttlecock(
+            @PathVariable Integer warehouseId,
+            @PathVariable Integer productId,
+            @Valid @RequestBody ProductUpdateRequest request) {
+
+        productService.updateShuttlecockInWarehouse(warehouseId, productId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Delete shuttlecock in warehouse")
+    @DeleteMapping("/warehouse/{warehouseId}/shuttlecocks/{productId}")
+    public ResponseEntity<Void> deleteShuttlecock(
+            @PathVariable Integer warehouseId,
+            @PathVariable Integer productId) {
+
+        productService.deleteShuttlecockInWarehouse(warehouseId, productId);
+        return ResponseEntity.noContent().build();
+    }
 }

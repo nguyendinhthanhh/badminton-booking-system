@@ -14,6 +14,7 @@ public interface ProductMapper {
     Product toEntity(ProductCreateRequest dto);
 
     @Mapping(source = "warehouse.id", target = "warehouseId")
+    @Mapping(source = "category.id", target = "categoryId")
     ProductResponse toResponse(Product product);
 
     void updateProduct(@MappingTarget Product entity, ProductUpdateRequest dto);

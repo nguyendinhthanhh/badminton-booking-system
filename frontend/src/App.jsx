@@ -18,6 +18,7 @@ import BookingManagement from './pages/admin/BookingManagement';
 import PriceRuleManagement from './pages/admin/PriceRuleManagement';
 import CourtPriceManagement from './pages/admin/CourtPriceManagement';
 import SystemConfig from './pages/admin/SystemConfig';
+import ShuttlecockManagement from './pages/admin/ShuttlecockManagement';
 import AuthPage from './pages/auth/AuthPage.jsx';
 import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
 import './App.css';
@@ -56,6 +57,7 @@ function App() {
             <Route path="users" element={<UserManagement />} />
             <Route path="price-rules" element={<PriceRuleManagement />} />
             <Route path="system-config" element={<SystemConfig />} />
+            <Route path="shuttlecocks" element={<ShuttlecockManagement />} />
             <Route path="profile" element={<UserProfile />} />
           </Route>
         </Route>

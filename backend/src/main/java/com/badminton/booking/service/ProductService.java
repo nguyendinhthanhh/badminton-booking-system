@@ -16,4 +16,12 @@ public interface ProductService {
     void updateProductInWarehouse(Integer warehouseId, Integer productId, ProductUpdateRequest request);
 
     void deleteProductInWarehouse(Integer warehouseId, Integer productId);
+
+    Page<ProductResponse> getShuttlecocksByWarehouse(Integer warehouseId, int page, int size);
+
+    ProductResponse createShuttlecockInWarehouse(Integer warehouseId, ProductCreateRequest request);
+
+    void updateShuttlecockInWarehouse(Integer warehouseId, Integer productId, ProductUpdateRequest request);
+
+    void deleteShuttlecockInWarehouse(Integer warehouseId, Integer productId);
 }

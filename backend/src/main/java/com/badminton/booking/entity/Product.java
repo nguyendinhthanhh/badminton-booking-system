@@ -12,7 +12,13 @@ import java.util.Set;
 @Getter
 @Setter
 @Entity
-@Table(name = "products")
+@Table(
+        name = "products",
+        indexes = {
+                @Index(name = "idx_products_wh_category", columnList = "warehouse_id, category_id"),
+                @Index(name = "idx_products_wh_category_product", columnList = "warehouse_id, category_id, product_id")
+        }
+)
 public class Product {
 
     @Id

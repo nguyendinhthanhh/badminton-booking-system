@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaPercentage, FaCogs } from 'react-icons/fa';
+import { FaCogs } from 'react-icons/fa';
 import useAuthStore from '../../store/useAuthStore';
 
 const AdminSidebar = () => {
@@ -9,19 +9,17 @@ const AdminSidebar = () => {
 
   const menuItems = [
     { path: '/admin', icon: 'dashboard', label: 'Dashboard', exact: true },
-
     { path: '/admin/courts', icon: 'stadium', label: 'Quản lý sân' },
     { path: '/admin/court-prices', icon: 'payments', label: 'Giá sân' },
     { path: '/admin/users', icon: 'group', label: 'Người dùng' },
     { path: '/admin/bookings', icon: 'event_available', label: 'Lịch đặt sân' },
     { path: '/admin/booking-management', icon: 'receipt_long', label: 'Quản lý Booking' },
-    { path: '/admin/system-config', icon: <FaCogs />, label: 'Cấu hình hệ thống' } // Updated icon to JSX
+    { path: '/admin/shuttlecocks', icon: 'deployed_code', label: 'Quản lý cầu lông' },
+    { path: '/admin/system-config', icon: <FaCogs />, label: 'Cấu hình hệ thống' }
   ];
 
   const isActive = (path, exact = false) => {
-    if (exact) {
-      return location.pathname === path;
-    }
+    if (exact) return location.pathname === path;
     return location.pathname.startsWith(path);
   };
 
@@ -32,7 +30,6 @@ const AdminSidebar = () => {
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
-      {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity group">
           <div className="bg-blue-600 p-2 rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors">
@@ -45,7 +42,6 @@ const AdminSidebar = () => {
         </Link>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1">
         {menuItems.map((item) => (
           <Link
@@ -62,7 +58,6 @@ const AdminSidebar = () => {
         ))}
       </nav>
 
-      {/* User Profile */}
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer group">
           <div className="bg-blue-600 rounded-full w-10 h-10 flex items-center justify-center text-white font-bold">

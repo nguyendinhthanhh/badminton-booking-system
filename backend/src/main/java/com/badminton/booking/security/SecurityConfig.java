@@ -68,6 +68,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/bookings/court/*/available-slots").permitAll()
                         .requestMatchers("/api/bookings/court/*").permitAll()
                         .requestMatchers("/api/bookings").permitAll() // POST create booking
+                        .requestMatchers("/api/warehouses", "/api/warehouses/**").permitAll()
+                        .requestMatchers("/api/products/warehouse/*/shuttlecocks", "/api/products/warehouse/*/shuttlecocks/**").permitAll()
 
                         // API lịch đặt sân - yêu cầu xác thực
                         .requestMatchers("/api/schedule/admin/**").authenticated()

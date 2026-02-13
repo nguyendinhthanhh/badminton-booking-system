@@ -22,7 +22,7 @@ import java.util.ArrayList;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class DataSeeder implements CommandLineRunner {
+public class    DataSeeder implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;

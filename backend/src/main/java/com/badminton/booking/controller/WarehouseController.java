@@ -2,13 +2,16 @@ package com.badminton.booking.controller;
 
 import com.badminton.booking.dto.request.ProductCreateRequest;
 import com.badminton.booking.dto.request.ProductUpdateRequest;
+import com.badminton.booking.dto.response.WarehouseOptionResponse;
 import com.badminton.booking.dto.product.ProductResponse;
+import com.badminton.booking.repository.WarehouseRepository;
 import com.badminton.booking.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +24,21 @@ public class WarehouseController {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private WarehouseRepository warehouseRepository;
+
+    @Operation(summary = "Get all warehouses")
+    @GetMapping
+    public ResponseEntity<List<WarehouseOptionResponse>> getWarehouses() {
+        List<WarehouseOptionResponse> warehouses = warehouseRepository.findAll().stream()
+                .map(warehouse -> new WarehouseOptionResponse(
+                        warehouse.getId(),
+                        warehouse.getName(),
+                        warehouse.getAddress()))
+                .toList();
+        return ResponseEntity.ok(warehouses);
+    }
 
     @Operation(summary = "Get products by warehouse")
     @GetMapping("/{warehouseId}/products")
