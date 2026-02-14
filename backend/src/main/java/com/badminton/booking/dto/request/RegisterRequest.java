@@ -1,6 +1,7 @@
 package com.badminton.booking.dto.request;
 
 import com.badminton.booking.entity.enums.Gender;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -29,6 +30,7 @@ public class RegisterRequest {
     private String password;
 
     @NotBlank(message = "Email is required")
+    @Email(message = "Email is not valid")
     private String email;
 
     private String phoneNumber;

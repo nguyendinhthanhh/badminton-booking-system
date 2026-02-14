@@ -8,6 +8,7 @@ import com.badminton.booking.exception.ResourceNotFoundException;
 import com.badminton.booking.repository.BookingRepository;
 import com.badminton.booking.repository.PaymentRepository;
 import com.badminton.booking.service.BookingService;
+import com.badminton.booking.service.EmailService;
 import com.badminton.booking.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +31,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
     private final BookingService bookingService;
+    private final EmailService emailService;
 
     @Override
     public BookingResponse payDeposit(DepositPaymentRequest request) {
@@ -74,6 +79,8 @@ public class PaymentServiceImpl implements PaymentService {
 
         log.info("Deposit paid for booking {} - Amount: {}", booking.getId(), booking.getDepositAmount());
 
+        sendBookingConfirmationEmailSafely(booking);
+
         // Return updated booking response
         return bookingService.getBooking(booking.getId());
     }
@@ -109,5 +116,31 @@ public class PaymentServiceImpl implements PaymentService {
             booking.getId(), payment.getAmount());
 
         return bookingService.getBooking(booking.getId());
+    }
+
+    private void sendBookingConfirmationEmailSafely(Booking booking) {
+        if (booking.getUser() == null || booking.getUser().getEmail() == null || booking.getUser().getEmail().isBlank()) {
+            return;
+        }
+
+        try {
+            NumberFormat currencyFormatter = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+            emailService.sendBookingConfirmation(
+                    booking.getUser().getEmail(),
+                    booking.getUser().getFullName(),
+                    booking.getCourt() != null ? booking.getCourt().getName() : "N/A",
+                    booking.getPlayDate() != null ? booking.getPlayDate().format(dateFormatter) : "N/A",
+                    booking.getStartTime() != null ? booking.getStartTime().format(timeFormatter) : "N/A",
+                    booking.getEndTime() != null ? booking.getEndTime().format(timeFormatter) : "N/A",
+                    booking.getTotalPrice() != null ? currencyFormatter.format(booking.getTotalPrice()) + " VND" : "N/A",
+                    booking.getDepositAmount() != null ? currencyFormatter.format(booking.getDepositAmount()) + " VND" : "N/A"
+            );
+        } catch (Exception ex) {
+            // Do not fail booking confirmation flow if email sending fails.
+            log.warn("Failed to send booking confirmation email for booking {}: {}", booking.getId(), ex.getMessage());
+        }
     }
 }

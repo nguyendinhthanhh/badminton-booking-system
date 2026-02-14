@@ -20,6 +20,7 @@ import CourtPriceManagement from './pages/admin/CourtPriceManagement';
 import SystemConfig from './pages/admin/SystemConfig';
 import ShuttlecockManagement from './pages/admin/ShuttlecockManagement';
 import AuthPage from './pages/auth/AuthPage.jsx';
+import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx';
 import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
 import './App.css';
 
@@ -30,6 +31,7 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
 
         <Route element={<GuestLayout />}>
           <Route path="/" element={<GuestHome />} />

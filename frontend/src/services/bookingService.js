@@ -2,10 +2,10 @@ import axiosClient from '../axiosConfig/axiosConfig';
 
 const bookingService = {
   // Tạo booking mới
-  createBooking: async (userId, bookingData) => {
+  createBooking: async (bookingData) => {
     try {
-      console.log('📝 Creating booking:', { userId, bookingData });
-      const response = await axiosClient.post(`/bookings?userId=${userId}`, bookingData);
+      console.log('Creating booking:', bookingData);
+      const response = await axiosClient.post('/bookings', bookingData);
       console.log('✅ Booking created:', response.data);
       return response.data;
     } catch (error) {
@@ -178,3 +178,4 @@ const bookingService = {
 };
 
 export default bookingService;
+

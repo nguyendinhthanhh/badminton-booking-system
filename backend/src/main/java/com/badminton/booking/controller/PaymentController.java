@@ -20,7 +20,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping("/deposit")
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Operation(summary = "Pay deposit for booking", 
                description = "Thanh toán 1/3 tiền cọc để xác nhận đặt sân")
     public ResponseEntity<BookingResponse> payDeposit(@Valid @RequestBody DepositPaymentRequest request) {
@@ -29,7 +29,7 @@ public class PaymentController {
     }
 
     @PostMapping("/remaining/{bookingId}")
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Operation(summary = "Pay remaining amount", 
                description = "Thanh toán phần còn lại khi check-in")
     public ResponseEntity<BookingResponse> payRemaining(

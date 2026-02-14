@@ -6,6 +6,7 @@ import com.badminton.booking.entity.enums.DayType;
 import com.badminton.booking.exception.ResourceNotFoundException;
 import com.badminton.booking.repository.*;
 import com.badminton.booking.service.BookingService;
+import com.badminton.booking.service.EmailService;
 import com.badminton.booking.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,6 +36,7 @@ public class BookingServiceImpl implements BookingService {
     private final UserRepository userRepository;
     private final ReleasedSlotRepository releasedSlotRepository;
     private final SystemConfigService systemConfigService;
+    private final EmailService emailService;
 
     // ===== CONSTANTS =====
     private static final int DEFAULT_BUFFER_MINUTES = 10;
@@ -622,6 +625,9 @@ public class BookingServiceImpl implements BookingService {
         }
 
         Booking saved = bookingRepository.save(booking);
+        if (STATUS_CANCELLED.equals(newStatus)) {
+            sendBookingCancellationEmailSafely(saved, "Booking was cancelled by admin.");
+        }
         return toBookingResponse(saved);
     }
 
@@ -647,6 +653,7 @@ public class BookingServiceImpl implements BookingService {
 
         Booking saved = bookingRepository.save(booking);
         log.info("Cancelled booking {}: {}", bookingId, reason);
+        sendBookingCancellationEmailSafely(saved, reason);
 
         return toBookingResponse(saved);
     }
@@ -692,6 +699,9 @@ public class BookingServiceImpl implements BookingService {
         }
 
         Booking saved = bookingRepository.save(booking);
+        if (STATUS_CANCELLED.equals(saved.getStatus())) {
+            sendBookingCancellationEmailSafely(saved, reason);
+        }
         return toBookingResponse(saved);
     }
 
@@ -710,6 +720,7 @@ public class BookingServiceImpl implements BookingService {
 
         Booking saved = bookingRepository.save(booking);
         log.info("Admin approved cancellation for booking {}", bookingId);
+        sendBookingCancellationEmailSafely(saved, "Cancellation request approved by admin.");
 
         return toBookingResponse(saved);
     }
@@ -1366,6 +1377,37 @@ public class BookingServiceImpl implements BookingService {
             breakdown.setSubtotal(segment.getSubtotal());
             breakdown.setDayType(priceCalc.getDayType());
             booking.getPriceBreakdowns().add(breakdown);
+        }
+    }
+
+    private void sendBookingCancellationEmailSafely(Booking booking, String reason) {
+        if (booking == null || booking.getUser() == null) {
+            log.warn("Skip cancellation email: booking/user is null (bookingId={})",
+                    booking != null ? booking.getId() : null);
+            return;
+        }
+        if (booking.getUser().getEmail() == null || booking.getUser().getEmail().isBlank()) {
+            log.warn("Skip cancellation email: user email is empty (bookingId={}, userId={})",
+                    booking.getId(),
+                    booking.getUser().getId());
+            return;
+        }
+
+        try {
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+            emailService.sendBookingCancellation(
+                    booking.getUser().getEmail(),
+                    booking.getUser().getFullName(),
+                    booking.getCourt() != null ? booking.getCourt().getName() : "N/A",
+                    booking.getPlayDate() != null ? booking.getPlayDate().format(dateFormatter) : "N/A",
+                    booking.getStartTime() != null ? booking.getStartTime().format(timeFormatter) : "N/A",
+                    booking.getEndTime() != null ? booking.getEndTime().format(timeFormatter) : "N/A",
+                    reason
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to send booking cancellation email for booking {}: {}", booking.getId(), ex.getMessage());
         }
     }
 

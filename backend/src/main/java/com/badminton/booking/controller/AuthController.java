@@ -2,8 +2,9 @@ package com.badminton.booking.controller;
 
 import com.badminton.booking.dto.request.LoginRequest;
 import com.badminton.booking.dto.request.RefreshTokenRequest;
-import com.badminton.booking.dto.response.AuthResponse;
 import com.badminton.booking.dto.request.RegisterRequest;
+import com.badminton.booking.dto.request.ResendVerificationRequest;
+import com.badminton.booking.dto.response.AuthResponse;
 import com.badminton.booking.security.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +21,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
-        authService.register(req);
-        return ResponseEntity.ok("User registered successfully");
+        return ResponseEntity.ok(authService.register(req));
     }
 
     @PostMapping("/login")
@@ -38,5 +38,23 @@ public class AuthController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(
+            @RequestParam(value = "code", required = false) String code,
+            @RequestParam(value = "token", required = false) String token
+    ) {
+        String verificationValue = (code != null && !code.isBlank()) ? code : token;
+        if (verificationValue == null || verificationValue.isBlank()) {
+            return ResponseEntity.badRequest().body("Verification code is required.");
+        }
+
+        return ResponseEntity.ok(authService.verifyEmail(verificationValue));
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        return ResponseEntity.ok(authService.resendVerificationEmail(request.getEmail()));
     }
 }

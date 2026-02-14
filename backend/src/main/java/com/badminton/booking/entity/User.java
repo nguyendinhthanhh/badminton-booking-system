@@ -65,6 +65,13 @@ public class User {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    @ColumnDefault("true")
+    @Column(name = "email_verified", nullable = false)
+    private Boolean emailVerified = true;
+
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
     private Role role;

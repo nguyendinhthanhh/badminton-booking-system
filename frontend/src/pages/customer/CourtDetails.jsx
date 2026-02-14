@@ -268,8 +268,6 @@ const CourtDetails = () => {
 
   const handlePaymentSuccess = async (paymentMethod) => {
     // Bây giờ mới tạo booking sau khi thanh toán
-    const userId = 1; // TODO: Get from Auth Context
-
     try {
       setBookingInProgress(true);
 
@@ -282,7 +280,7 @@ const CourtDetails = () => {
       };
 
       console.log('📝 Creating booking with data:', bookingData);
-      const response = await bookingService.createBooking(userId, bookingData);
+      const response = await bookingService.createBooking(bookingData);
       console.log('✅ Booking created:', response);
 
       // Sau khi tạo booking, gọi API thanh toán deposit
