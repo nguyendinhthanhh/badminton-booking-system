@@ -2,7 +2,7 @@ import React from 'react';
 import { Calendar, Clock, MapPin, CreditCard, AlertCircle, XCircle } from 'lucide-react';
 import CheckInCountdown from './CheckInCountdown';
 
-const BookingCard = ({ booking, onCancel }) => {
+const BookingCard = ({ booking, onCancel, onCheckIn }) => {
   const getStatusColor = (status) => {
     const colors = {
       PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -254,6 +254,17 @@ const BookingCard = ({ booking, onCancel }) => {
             </p>
           </div>
         </div>
+
+        {/* Check-in & Payment Button (remaining 2/3 via VNPay) */}
+        {booking.status === 'CONFIRMED' && booking.remainingAmount > 0 && onCheckIn && (
+          <button
+            onClick={() => onCheckIn(booking)}
+            className="w-full mt-3 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+          >
+            <CreditCard className="w-4 h-4" />
+            Check-in & thanh toán 2/3 còn lại
+          </button>
+        )}
 
         {/* Cancel Button */}
         {(booking.status === 'PENDING' || booking.status === 'CONFIRMED') && (

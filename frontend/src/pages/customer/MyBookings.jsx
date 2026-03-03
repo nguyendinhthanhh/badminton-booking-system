@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, RefreshCw, Search, CheckCircle } from 'lucide-react';
 import { myBookingService } from '../../services/myBookingService';
+import paymentService from '../../services/paymentService';
 import BookingCard from '../../components/customer/BookingCard';
 import CancelBookingModal from '../../components/customer/CancelBookingModal';
 import BookingCardSkeleton from '../../components/common/BookingCardSkeleton';
@@ -123,6 +124,21 @@ const MyBookings = () => {
   const handleCancelClose = () => {
     setShowCancelModal(false);
     setSelectedBooking(null);
+  };
+
+  const handleCheckIn = async (booking) => {
+    try {
+      setError(null);
+      const { paymentUrl } = await paymentService.createVnPayRemainingUrl(booking.bookingId);
+      window.location.href = paymentUrl;
+    } catch (err) {
+      console.error('Error creating VNPay remaining payment URL:', err);
+      setError(
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        'Không thể tạo URL thanh toán VNPay cho phần còn lại. Vui lòng thử lại.'
+      );
+    }
   };
 
   // Filter bookings client-side không cần nữa vì API đã filter
@@ -384,6 +400,7 @@ const MyBookings = () => {
                           key={booking.bookingId}
                           booking={booking}
                           onCancel={handleCancelClick}
+                          onCheckIn={handleCheckIn}
                         />
                       ))}
                     </div>

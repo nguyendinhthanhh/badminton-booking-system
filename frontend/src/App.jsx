@@ -9,6 +9,7 @@ import CourtList from './pages/customer/CourtList';
 import CourtBooking from './pages/customer/CourtBooking';
 import UserProfile from './pages/customer/UserProfile';
 import MyBookings from './pages/customer/MyBookings';
+import PaymentResult from './pages/customer/PaymentResult';
 import Community from './pages/customer/Community';
 import Dashboard from './pages/admin/Dashboard';
 import CourtManagement from './pages/admin/CourtManagement';
@@ -40,6 +41,7 @@ function App() {
           <Route path="/courts/:id" element={<CourtDetails />} />
           <Route path="/booking" element={<CourtBooking />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/payment-result" element={<PaymentResult />} />
 
           {/* Protected Customer Routes with Layout */}
           <Route element={<ProtectedRoute redirectPath="/login" />}>
