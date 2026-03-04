@@ -15,6 +15,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Tag(name = "Warehouses", description = "Endpoints for warehouse products")
 @RestController
@@ -54,6 +55,7 @@ public class WarehouseController {
 
     @Operation(summary = "Create product in warehouse")
     @PostMapping("/{warehouseId}/products")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<ProductResponse> createProduct(
             @PathVariable Integer warehouseId,
             @Valid @RequestBody ProductCreateRequest request) {
@@ -64,6 +66,7 @@ public class WarehouseController {
 
     @Operation(summary = "Update product in warehouse")
     @PutMapping("/{warehouseId}/products/{productId}")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<Void> updateProduct(
             @PathVariable Integer warehouseId,
             @PathVariable Integer productId,
@@ -75,11 +78,58 @@ public class WarehouseController {
 
     @Operation(summary = "Delete product in warehouse")
     @DeleteMapping("/{warehouseId}/products/{productId}")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<Void> deleteProduct(
             @PathVariable Integer warehouseId,
             @PathVariable Integer productId) {
 
         productService.deleteProductInWarehouse(warehouseId, productId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Shuttlecock endpoints moved here so warehouse product APIs are consolidated
+    @Operation(summary = "List shuttlecocks by warehouse")
+    @GetMapping("/{warehouseId}/shuttlecocks")
+    public ResponseEntity<Page<ProductResponse>> listShuttlecocks(
+            @PathVariable Integer warehouseId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Page<ProductResponse> responses = productService.getShuttlecocksByWarehouse(warehouseId, page, size);
+        return ResponseEntity.ok(responses);
+    }
+
+    @Operation(summary = "Create shuttlecock in warehouse")
+    @PostMapping("/{warehouseId}/shuttlecocks")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    public ResponseEntity<ProductResponse> createShuttlecock(
+            @PathVariable Integer warehouseId,
+            @Valid @RequestBody ProductCreateRequest request) {
+
+        ProductResponse response = productService.createShuttlecockInWarehouse(warehouseId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Update shuttlecock in warehouse")
+    @PutMapping("/{warehouseId}/shuttlecocks/{productId}")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    public ResponseEntity<Void> updateShuttlecock(
+            @PathVariable Integer warehouseId,
+            @PathVariable Integer productId,
+            @Valid @RequestBody ProductUpdateRequest request) {
+
+        productService.updateShuttlecockInWarehouse(warehouseId, productId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Delete shuttlecock in warehouse")
+    @DeleteMapping("/{warehouseId}/shuttlecocks/{productId}")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    public ResponseEntity<Void> deleteShuttlecock(
+            @PathVariable Integer warehouseId,
+            @PathVariable Integer productId) {
+
+        productService.deleteShuttlecockInWarehouse(warehouseId, productId);
         return ResponseEntity.noContent().build();
     }
 }

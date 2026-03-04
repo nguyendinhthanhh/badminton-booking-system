@@ -16,6 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.Arrays;
 
@@ -68,8 +69,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/bookings/court/*/available-slots").permitAll()
                         .requestMatchers("/api/bookings/court/*").permitAll()
                         .requestMatchers("/api/bookings").permitAll() // POST create booking
-                        .requestMatchers("/api/warehouses", "/api/warehouses/**").permitAll()
-                        .requestMatchers("/api/products/warehouse/*/shuttlecocks", "/api/products/warehouse/*/shuttlecocks/**").permitAll()
+                        // Allow only GET for warehouses and shuttlecocks publicly; other methods require auth
+                        .requestMatchers(HttpMethod.GET, "/api/warehouses/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/warehouses/*/shuttlecocks").permitAll()
 
                         // API lịch đặt sân - yêu cầu xác thực
                         .requestMatchers("/api/schedule/admin/**").authenticated()
@@ -111,4 +113,3 @@ public class SecurityConfig {
         return source;
     }
 }
-
