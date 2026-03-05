@@ -16,6 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.Arrays;
 
@@ -34,6 +35,7 @@ public class SecurityConfig {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable()) // Thường disable nếu dùng JWT
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         // Cho phép truy cập công khai cho guest users
                         .requestMatchers("/api/courts/all", "/api/courts/findById/**").permitAll()
@@ -68,8 +70,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/bookings/court/*/available-slots").permitAll()
                         .requestMatchers("/api/bookings/court/*").permitAll()
                         .requestMatchers("/api/bookings").permitAll() // POST create booking
-                        .requestMatchers("/api/warehouses", "/api/warehouses/**").permitAll()
-                        .requestMatchers("/api/products/warehouse/*/shuttlecocks", "/api/products/warehouse/*/shuttlecocks/**").permitAll()
+                        // Allow only GET for warehouses and shuttlecocks publicly; other methods require auth
+                        .requestMatchers(HttpMethod.GET, "/api/warehouses/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/warehouses/*/shuttlecocks").permitAll()
+                        // Allow GET for frontend product/shuttlecock path — POST/PUT/DELETE require auth + role
+                        .requestMatchers(HttpMethod.GET, "/api/products/warehouse/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyRole("ADMIN", "STAFF")
+                        .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyRole("ADMIN", "STAFF")
+                        .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAnyRole("ADMIN", "STAFF")
 
                         // API lịch đặt sân - yêu cầu xác thực
                         .requestMatchers("/api/schedule/admin/**").authenticated()
@@ -93,6 +101,7 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
@@ -103,7 +112,8 @@ public class SecurityConfig {
                 "http://localhost:8080"));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -111,4 +121,3 @@ public class SecurityConfig {
         return source;
     }
 }
-

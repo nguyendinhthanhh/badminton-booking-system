@@ -1,22 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
-import shuttlecockService from '../../services/shuttlecockService';
-import ShuttlecockFormModal from '../../components/admin/ShuttlecockFormModal';
-import ConfirmDialog from '../../components/common/ConfirmDialog';
-import Toast from '../../components/common/Toast';
-import TableSkeleton from '../../components/common/TableSkeleton';
-import StatCardSkeleton from '../../components/common/StatCardSkeleton';
+import { useEffect, useMemo, useState } from "react";
+import shuttlecockService from "../../services/shuttlecockService";
+import ShuttlecockFormModal from "../../components/admin/ShuttlecockFormModal";
+import ShuttlecockDetailModal from "../../components/admin/ShuttlecockDetailModal";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import Toast from "../../components/common/Toast";
+import TableSkeleton from "../../components/common/TableSkeleton";
+import StatCardSkeleton from "../../components/common/StatCardSkeleton";
 
 const pageSize = 10;
 
 const ShuttlecockManagement = () => {
   const [warehouses, setWarehouses] = useState([]);
-  const [warehouseId, setWarehouseId] = useState('');
+  const [warehouseId, setWarehouseId] = useState("");
   const [shuttlecocks, setShuttlecocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -24,6 +25,8 @@ const ShuttlecockManagement = () => {
   const [deletingItem, setDeletingItem] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailItem, setDetailItem] = useState(null);
 
   const fetchWarehouses = async () => {
     try {
@@ -33,8 +36,8 @@ const ShuttlecockManagement = () => {
         setWarehouseId(String(data[0].id));
       }
     } catch (error) {
-      console.error('Error fetching warehouses:', error);
-      setToast({ type: 'error', message: 'Không tải được danh sách kho.' });
+      console.error("Error fetching warehouses:", error);
+      setToast({ type: "error", message: "Không tải được danh sách kho." });
       setLoading(false);
     }
   };
@@ -43,13 +46,20 @@ const ShuttlecockManagement = () => {
     if (!targetWarehouseId) return;
     try {
       setLoading(true);
-      const data = await shuttlecockService.getShuttlecocksByWarehouse(targetWarehouseId, targetPage, pageSize);
+      const data = await shuttlecockService.getShuttlecocksByWarehouse(
+        targetWarehouseId,
+        targetPage,
+        pageSize,
+      );
       setShuttlecocks(data.content || []);
       setTotalPages(data.totalPages || 0);
       setTotalElements(data.totalElements || 0);
     } catch (error) {
-      console.error('Error fetching shuttlecocks:', error);
-      setToast({ type: 'error', message: 'Không tải được danh sách cầu lông.' });
+      console.error("Error fetching shuttlecocks:", error);
+      setToast({
+        type: "error",
+        message: "Không tải được danh sách cầu lông.",
+      });
     } finally {
       setLoading(false);
     }
@@ -75,15 +85,24 @@ const ShuttlecockManagement = () => {
     setShowFormModal(true);
   };
 
+  const handleViewDetail = (item) => {
+    setDetailItem(item);
+    setShowDetailModal(true);
+  };
+
   const handleSubmit = async (payload) => {
     try {
       const numericWarehouseId = Number(warehouseId);
       if (editingItem) {
-        await shuttlecockService.updateShuttlecock(numericWarehouseId, editingItem.id, payload);
-        setToast({ type: 'success', message: 'Cập nhật loại cầu thành công.' });
+        await shuttlecockService.updateShuttlecock(
+          numericWarehouseId,
+          editingItem.id,
+          payload,
+        );
+        setToast({ type: "success", message: "Cập nhật loại cầu thành công." });
       } else {
         await shuttlecockService.createShuttlecock(numericWarehouseId, payload);
-        setToast({ type: 'success', message: 'Tạo loại cầu thành công.' });
+        setToast({ type: "success", message: "Tạo loại cầu thành công." });
       }
       setShowFormModal(false);
       setEditingItem(null);
@@ -91,11 +110,14 @@ const ShuttlecockManagement = () => {
       try {
         await fetchShuttlecocks(numericWarehouseId, 0);
       } catch (refreshError) {
-        console.error('Error refreshing shuttlecocks after save:', refreshError);
+        console.error(
+          "Error refreshing shuttlecocks after save:",
+          refreshError,
+        );
       }
     } catch (error) {
-      console.error('Error saving shuttlecock:', error);
-      setToast({ type: 'error', message: 'Lưu dữ liệu thất bại.' });
+      console.error("Error saving shuttlecock:", error);
+      setToast({ type: "error", message: "Lưu dữ liệu thất bại." });
       throw error;
     }
   };
@@ -110,19 +132,25 @@ const ShuttlecockManagement = () => {
     setDeleteLoading(true);
     try {
       const numericWarehouseId = Number(warehouseId);
-      await shuttlecockService.deleteShuttlecock(numericWarehouseId, deletingItem.id);
-      setToast({ type: 'success', message: 'Xóa loại cầu thành công.' });
+      await shuttlecockService.deleteShuttlecock(
+        numericWarehouseId,
+        deletingItem.id,
+      );
+      setToast({ type: "success", message: "Xóa loại cầu thành công." });
       setShowDeleteDialog(false);
       setDeletingItem(null);
       setPage(0);
       try {
         await fetchShuttlecocks(numericWarehouseId, 0);
       } catch (refreshError) {
-        console.error('Error refreshing shuttlecocks after delete:', refreshError);
+        console.error(
+          "Error refreshing shuttlecocks after delete:",
+          refreshError,
+        );
       }
     } catch (error) {
-      console.error('Error deleting shuttlecock:', error);
-      setToast({ type: 'error', message: 'Xóa loại cầu thất bại.' });
+      console.error("Error deleting shuttlecock:", error);
+      setToast({ type: "error", message: "Xóa loại cầu thất bại." });
     } finally {
       setDeleteLoading(false);
     }
@@ -131,22 +159,35 @@ const ShuttlecockManagement = () => {
   const filteredRows = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return shuttlecocks;
-    return shuttlecocks.filter((item) =>
-      item.name?.toLowerCase().includes(term) || item.sku?.toLowerCase().includes(term)
+    return shuttlecocks.filter(
+      (item) =>
+        item.name?.toLowerCase().includes(term) ||
+        item.sku?.toLowerCase().includes(term),
     );
   }, [shuttlecocks, searchTerm]);
 
-  const totalStock = shuttlecocks.reduce((sum, item) => sum + (item.quantity || 0), 0);
-  const lowStockCount = shuttlecocks.filter((item) => (item.quantity || 0) <= 10).length;
-  const outOfStockCount = shuttlecocks.filter((item) => (item.quantity || 0) === 0).length;
+  const totalStock = shuttlecocks.reduce(
+    (sum, item) => sum + (item.quantity || 0),
+    0,
+  );
+  const lowStockCount = shuttlecocks.filter(
+    (item) => (item.quantity || 0) <= 10,
+  ).length;
+  const outOfStockCount = shuttlecocks.filter(
+    (item) => (item.quantity || 0) === 0,
+  ).length;
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Quản lý cầu lông</h1>
-            <p className="text-gray-600 text-sm mt-1">CRUD danh mục cầu lông theo từng kho.</p>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+              Quản lý cầu lông
+            </h1>
+            <p className="text-gray-600 text-sm mt-1">
+              CRUD danh mục cầu lông theo từng kho.
+            </p>
           </div>
           <button
             onClick={handleCreate}
@@ -159,7 +200,9 @@ const ShuttlecockManagement = () => {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-          <label className="block text-xs font-medium text-gray-700 mb-1.5">Kho hàng</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+            Kho hàng
+          </label>
           <select
             value={warehouseId}
             onChange={(e) => {
@@ -170,7 +213,7 @@ const ShuttlecockManagement = () => {
           >
             {warehouses.map((warehouse) => (
               <option key={warehouse.id} value={warehouse.id}>
-                {warehouse.name} - {warehouse.address || 'N/A'}
+                {warehouse.name} - {warehouse.address || "N/A"}
               </option>
             ))}
           </select>
@@ -186,16 +229,28 @@ const ShuttlecockManagement = () => {
           ) : (
             <>
               <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                <p className="text-gray-600 font-medium text-sm">Tổng loại cầu</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{totalElements}</p>
+                <p className="text-gray-600 font-medium text-sm">
+                  Tổng loại cầu
+                </p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  {totalElements}
+                </p>
               </div>
               <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                <p className="text-gray-600 font-medium text-sm">Tổng tồn kho (trang hiện tại)</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{totalStock}</p>
+                <p className="text-gray-600 font-medium text-sm">
+                  Tổng tồn kho (trang hiện tại)
+                </p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  {totalStock}
+                </p>
               </div>
               <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                <p className="text-gray-600 font-medium text-sm">Cảnh báo tồn kho</p>
-                <p className="text-lg font-bold text-gray-900 mt-2">Sắp hết: {lowStockCount} | Hết: {outOfStockCount}</p>
+                <p className="text-gray-600 font-medium text-sm">
+                  Cảnh báo tồn kho
+                </p>
+                <p className="text-lg font-bold text-gray-900 mt-2">
+                  Sắp hết: {lowStockCount} | Hết: {outOfStockCount}
+                </p>
               </div>
             </>
           )}
@@ -204,7 +259,9 @@ const ShuttlecockManagement = () => {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-200 flex flex-col lg:flex-row gap-4 items-center justify-between">
             <div className="relative w-full lg:w-96">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xl">search</span>
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xl">
+                search
+              </span>
               <input
                 type="text"
                 value={searchTerm}
@@ -235,37 +292,70 @@ const ShuttlecockManagement = () => {
                 <tbody className="text-sm">
                   {filteredRows.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="p-12 text-center text-gray-500">
+                      <td
+                        colSpan="6"
+                        className="p-12 text-center text-gray-500"
+                      >
                         Không có dữ liệu cầu lông
                       </td>
                     </tr>
                   ) : (
                     filteredRows.map((item) => (
-                      <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                        <td className="p-4 font-semibold text-gray-900">{item.name}</td>
-                        <td className="p-4 text-gray-600">{item.sku || '-'}</td>
-                        <td className="p-4 text-gray-900">{Number(item.basePrice || 0).toLocaleString('vi-VN')} đ</td>
+                      <tr
+                        key={item.id}
+                        className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="p-4 font-semibold text-gray-900">
+                          <button
+                            onClick={() => handleViewDetail(item)}
+                            className="text-left hover:text-purple-600 hover:underline transition-colors"
+                          >
+                            {item.name}
+                          </button>
+                        </td>
+                        <td className="p-4 text-gray-600">{item.sku || "-"}</td>
+                        <td className="p-4 text-gray-900">
+                          {Number(item.basePrice || 0).toLocaleString("vi-VN")}{" "}
+                          đ
+                        </td>
                         <td className="p-4">
-                          <span className={`font-bold ${(item.quantity || 0) <= 10 ? 'text-red-600' : 'text-gray-900'}`}>
+                          <span
+                            className={`font-bold ${(item.quantity || 0) <= 10 ? "text-red-600" : "text-gray-900"}`}
+                          >
                             {item.quantity || 0}
                           </span>
                         </td>
-                        <td className="p-4 text-gray-600 max-w-xs truncate">{item.description || '-'}</td>
+                        <td className="p-4 text-gray-600 max-w-xs truncate">
+                          {item.description || "-"}
+                        </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleViewDetail(item)}
+                              className="p-1.5 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                              title="Xem chi tiết"
+                            >
+                              <span className="material-symbols-outlined text-lg">
+                                visibility
+                              </span>
+                            </button>
                             <button
                               onClick={() => handleEdit(item)}
                               className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                               title="Chỉnh sửa"
                             >
-                              <span className="material-symbols-outlined text-lg">edit</span>
+                              <span className="material-symbols-outlined text-lg">
+                                edit
+                              </span>
                             </button>
                             <button
                               onClick={() => openDeleteDialog(item)}
                               className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                               title="Xóa"
                             >
-                              <span className="material-symbols-outlined text-lg">delete</span>
+                              <span className="material-symbols-outlined text-lg">
+                                delete
+                              </span>
                             </button>
                           </div>
                         </td>
@@ -291,7 +381,9 @@ const ShuttlecockManagement = () => {
                   Trước
                 </button>
                 <button
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
                   disabled={page >= totalPages - 1}
                   className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
                 >
@@ -311,6 +403,16 @@ const ShuttlecockManagement = () => {
         }}
         onSubmit={handleSubmit}
         editData={editingItem}
+        existingShuttlecocks={shuttlecocks}
+      />
+
+      <ShuttlecockDetailModal
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setDetailItem(null);
+        }}
+        data={detailItem}
       />
 
       <ConfirmDialog

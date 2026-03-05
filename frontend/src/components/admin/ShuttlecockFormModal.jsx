@@ -1,14 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 const initialFormData = {
-  name: '',
-  sku: '',
-  basePrice: '',
-  quantity: '',
-  description: ''
+  name: "",
+  sku: "",
+  basePrice: "",
+  quantity: "",
+  description: "",
 };
 
-const ShuttlecockFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
+const ShuttlecockFormModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  editData = null,
+  existingShuttlecocks = [],
+}) => {
   const [formData, setFormData] = useState(initialFormData);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -16,11 +22,11 @@ const ShuttlecockFormModal = ({ isOpen, onClose, onSubmit, editData = null }) =>
   useEffect(() => {
     if (editData) {
       setFormData({
-        name: editData.name || '',
-        sku: editData.sku || '',
-        basePrice: editData.basePrice ?? '',
-        quantity: editData.quantity ?? '',
-        description: editData.description || ''
+        name: editData.name || "",
+        sku: editData.sku || "",
+        basePrice: editData.basePrice ?? "",
+        quantity: editData.quantity ?? "",
+        description: editData.description || "",
       });
     } else {
       setFormData(initialFormData);
@@ -34,18 +40,30 @@ const ShuttlecockFormModal = ({ isOpen, onClose, onSubmit, editData = null }) =>
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const validate = () => {
     const nextErrors = {};
-    if (!formData.name.trim()) nextErrors.name = 'Tên cầu không được để trống';
-    if (formData.basePrice === '' || Number(formData.basePrice) < 0) {
-      nextErrors.basePrice = 'Giá phải lớn hơn hoặc bằng 0';
+    if (!formData.name.trim()) nextErrors.name = "Tên cầu không được để trống";
+    if (formData.basePrice === "" || Number(formData.basePrice) < 0) {
+      nextErrors.basePrice = "Giá phải lớn hơn hoặc bằng 0";
     }
-    if (formData.quantity === '' || Number(formData.quantity) < 0) {
-      nextErrors.quantity = 'Số lượng phải lớn hơn hoặc bằng 0';
+    if (formData.quantity === "" || Number(formData.quantity) < 0) {
+      nextErrors.quantity = "Số lượng phải lớn hơn hoặc bằng 0";
+    }
+    // Validate SKU uniqueness
+    const skuValue = formData.sku.trim();
+    if (skuValue) {
+      const isDuplicate = existingShuttlecocks.some(
+        (item) =>
+          item.sku?.toLowerCase() === skuValue.toLowerCase() &&
+          item.id !== editData?.id,
+      );
+      if (isDuplicate) {
+        nextErrors.sku = `Mã SKU "${skuValue}" đã tồn tại. Vui lòng sử dụng mã khác.`;
+      }
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -62,8 +80,24 @@ const ShuttlecockFormModal = ({ isOpen, onClose, onSubmit, editData = null }) =>
         sku: formData.sku.trim() || null,
         basePrice: Number(formData.basePrice),
         quantity: Number(formData.quantity),
-        description: formData.description.trim() || null
+        description: formData.description.trim() || null,
       });
+    } catch (err) {
+      // If server returns validation errors in shape { fieldName: 'message' }
+      const serverErrors =
+        err?.response?.data?.errors || err?.response?.data?.error || null;
+      if (serverErrors && typeof serverErrors === "object") {
+        setErrors((prev) => ({ ...prev, ...serverErrors }));
+      } else if (typeof serverErrors === "string") {
+        setErrors((prev) => ({ ...prev, _global: serverErrors }));
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          _global: err?.message || "Lỗi khi lưu dữ liệu",
+        }));
+      }
+      // rethrow so parent can also react (e.g., show toast)
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -82,7 +116,7 @@ const ShuttlecockFormModal = ({ isOpen, onClose, onSubmit, editData = null }) =>
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                  {editData ? 'Chỉnh sửa loại cầu' : 'Thêm loại cầu mới'}
+                  {editData ? "Chỉnh sửa loại cầu" : "Thêm loại cầu mới"}
                 </h2>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   Quản lý thông tin loại cầu lông và số lượng tồn kho.
@@ -99,8 +133,15 @@ const ShuttlecockFormModal = ({ isOpen, onClose, onSubmit, editData = null }) =>
 
           <form onSubmit={handleSubmit}>
             <div className="px-6 py-4 space-y-4">
+              {errors._global && (
+                <div className="px-3 py-2 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+                  {errors._global}
+                </div>
+              )}
               <div>
-                <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">Tên cầu *</label>
+                <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                  Tên cầu *
+                </label>
                 <input
                   type="text"
                   name="name"
@@ -109,23 +150,32 @@ const ShuttlecockFormModal = ({ isOpen, onClose, onSubmit, editData = null }) =>
                   className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                   placeholder="Ví dụ: YONEX AS-50"
                 />
-                {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
+                {errors.name && (
+                  <p className="mt-1 text-xs text-red-600">{errors.name}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">Mã SKU</label>
+                  <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                    Mã SKU
+                  </label>
                   <input
                     type="text"
                     name="sku"
                     value={formData.sku}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    className={`w-full rounded-md border ${errors.sku ? "border-red-500" : "border-slate-300 dark:border-slate-700"} px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent`}
                     placeholder="Ví dụ: YAS50"
                   />
+                  {errors.sku && (
+                    <p className="mt-1 text-xs text-red-600">{errors.sku}</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">Số lượng *</label>
+                  <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                    Số lượng *
+                  </label>
                   <input
                     type="number"
                     min="0"
@@ -134,12 +184,18 @@ const ShuttlecockFormModal = ({ isOpen, onClose, onSubmit, editData = null }) =>
                     onChange={handleChange}
                     className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                   />
-                  {errors.quantity && <p className="mt-1 text-xs text-red-600">{errors.quantity}</p>}
+                  {errors.quantity && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {errors.quantity}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">Giá cơ bản (VND) *</label>
+                <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                  Giá cơ bản (VND) *
+                </label>
                 <input
                   type="number"
                   min="0"
@@ -149,11 +205,17 @@ const ShuttlecockFormModal = ({ isOpen, onClose, onSubmit, editData = null }) =>
                   onChange={handleChange}
                   className="w-full rounded-md border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                 />
-                {errors.basePrice && <p className="mt-1 text-xs text-red-600">{errors.basePrice}</p>}
+                {errors.basePrice && (
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.basePrice}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">Mô tả</label>
+                <label className="block text-xs font-medium text-slate-900 dark:text-slate-200 mb-1.5">
+                  Mô tả
+                </label>
                 <textarea
                   rows="3"
                   name="description"
@@ -185,7 +247,7 @@ const ShuttlecockFormModal = ({ isOpen, onClose, onSubmit, editData = null }) =>
                     Đang lưu...
                   </>
                 ) : (
-                  <>{editData ? 'Cập nhật' : 'Tạo mới'}</>
+                  <>{editData ? "Cập nhật" : "Tạo mới"}</>
                 )}
               </button>
             </div>

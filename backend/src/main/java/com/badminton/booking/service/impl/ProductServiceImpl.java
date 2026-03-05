@@ -7,6 +7,7 @@ import com.badminton.booking.dto.request.ProductUpdateRequest;
 import com.badminton.booking.entity.Category;
 import com.badminton.booking.entity.Product;
 import com.badminton.booking.entity.Warehouse;
+import com.badminton.booking.exception.ResourceNotFoundException;
 import com.badminton.booking.mapper.ProductMapper;
 import com.badminton.booking.repository.CategoryRepository;
 import com.badminton.booking.repository.ProductRepository;
@@ -37,13 +38,15 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse createProductInWarehouse(Integer warehouseId, ProductCreateRequest request) {
-        Warehouse warehouse = warehouseRepository.getReferenceById(warehouseId);
+        // ensure warehouse exists
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
 
         Product product = productMapper.toEntity(request);
         product.setWarehouse(warehouse);
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Category not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
             product.setCategory(category);
         }
 
@@ -63,7 +66,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse getProductByIdInWarehouse(Integer warehouseId, Integer productId) {
         Product product = productRepository
                 .findByIdAndWarehouseId(productId, warehouseId)
-                .orElseThrow(() -> new RuntimeException("Product not found in warehouse"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found in warehouse"));
 
         return productMapper.toResponse(product);
     }
@@ -72,12 +75,12 @@ public class ProductServiceImpl implements ProductService {
     public void updateProductInWarehouse(Integer warehouseId, Integer productId, ProductUpdateRequest request) {
         Product product = productRepository
                 .findByIdAndWarehouseId(productId, warehouseId)
-                .orElseThrow(() -> new RuntimeException("Product not found in warehouse"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found in warehouse"));
 
         productMapper.updateProduct(product, request);
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Category not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
             product.setCategory(category);
         }
         productRepository.save(product);
@@ -87,7 +90,7 @@ public class ProductServiceImpl implements ProductService {
     public void deleteProductInWarehouse(Integer warehouseId, Integer productId) {
         Product product = productRepository
                 .findByIdAndWarehouseId(productId, warehouseId)
-                .orElseThrow(() -> new RuntimeException("Product not found in warehouse"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found in warehouse"));
 
         productRepository.delete(product);
     }
@@ -103,8 +106,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse createShuttlecockInWarehouse(Integer warehouseId, ProductCreateRequest request) {
-        Warehouse warehouse = warehouseRepository.getReferenceById(warehouseId);
-        Category category = categoryRepository.getReferenceById(getShuttlecockCategoryId());
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
+        Category category = categoryRepository.findById(getShuttlecockCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Shuttlecock category not found"));
 
         Product product = productMapper.toEntity(request);
         product.setWarehouse(warehouse);
@@ -119,7 +124,7 @@ public class ProductServiceImpl implements ProductService {
         Integer categoryId = getShuttlecockCategoryId();
         Product product = productRepository
                 .findByIdAndWarehouseIdAndCategoryId(productId, warehouseId, categoryId)
-                .orElseThrow(() -> new RuntimeException("Shuttlecock not found in warehouse"));
+                .orElseThrow(() -> new ResourceNotFoundException("Shuttlecock not found in warehouse"));
 
         productMapper.updateProduct(product, request);
         productRepository.save(product);
@@ -131,7 +136,7 @@ public class ProductServiceImpl implements ProductService {
         Integer categoryId = getShuttlecockCategoryId();
         Product product = productRepository
                 .findByIdAndWarehouseIdAndCategoryId(productId, warehouseId, categoryId)
-                .orElseThrow(() -> new RuntimeException("Shuttlecock not found in warehouse"));
+                .orElseThrow(() -> new ResourceNotFoundException("Shuttlecock not found in warehouse"));
 
         productRepository.delete(product);
     }
@@ -145,7 +150,7 @@ public class ProductServiceImpl implements ProductService {
             if (shuttlecockCategoryId == null) {
                 shuttlecockCategoryId = categoryRepository.findByName(SHUTTLECOCK_CATEGORY)
                         .map(Category::getId)
-                        .orElseThrow(() -> new RuntimeException("Shuttlecock category not found"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Shuttlecock category not found"));
             }
             return shuttlecockCategoryId;
         }
