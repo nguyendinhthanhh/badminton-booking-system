@@ -267,7 +267,6 @@ const CourtDetails = () => {
   };
 
   const handlePaymentSuccess = async (paymentMethod) => {
-    // Bây giờ mới tạo booking sau khi thanh toán
     try {
       setBookingInProgress(true);
 
@@ -283,12 +282,19 @@ const CourtDetails = () => {
       const response = await bookingService.createBooking(bookingData);
       console.log('✅ Booking created:', response);
 
-      // Sau khi tạo booking, gọi API thanh toán deposit
       const depositPaymentData = {
         bookingId: response.bookingId, // Backend trả về bookingId, không phải id
         paymentMethod: paymentMethod,
         notes: `Thanh toán deposit qua ${paymentMethod}`
       };
+
+      if (paymentMethod === 'VNPAY') {
+        console.log('🔗 Creating VNPay payment URL with data:', depositPaymentData);
+        const { paymentUrl } = await paymentService.createVnPayDepositUrl(depositPaymentData);
+        console.log('➡️ Redirecting to VNPay:', paymentUrl);
+        window.location.href = paymentUrl;
+        return;
+      }
 
       console.log('💳 Paying deposit with data:', depositPaymentData);
       await paymentService.payDeposit(depositPaymentData);
