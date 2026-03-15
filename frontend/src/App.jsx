@@ -20,6 +20,7 @@ import PriceRuleManagement from './pages/admin/PriceRuleManagement';
 import CourtPriceManagement from './pages/admin/CourtPriceManagement';
 import SystemConfig from './pages/admin/SystemConfig';
 import ShuttlecockManagement from './pages/admin/ShuttlecockManagement';
+import RacketManagement from './pages/admin/RacketManagement';
 import AuthPage from './pages/auth/AuthPage.jsx';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx';
 import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
@@ -62,6 +63,7 @@ function App() {
             <Route path="price-rules" element={<PriceRuleManagement />} />
             <Route path="system-config" element={<SystemConfig />} />
             <Route path="shuttlecocks" element={<ShuttlecockManagement />} />
+            <Route path="rackets" element={<RacketManagement />} />
             <Route path="profile" element={<UserProfile />} />
           </Route>
         </Route>
