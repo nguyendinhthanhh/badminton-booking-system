@@ -8,7 +8,7 @@ const shuttlecockService = {
 
   getShuttlecocksByWarehouse: async (warehouseId, page = 0, size = 20) => {
     const response = await axiosClient.get(
-      `/products/warehouse/${warehouseId}/shuttlecocks`,
+      `/warehouses/${warehouseId}/shuttlecocks`,
       {
         params: { page, size },
       }
@@ -18,7 +18,7 @@ const shuttlecockService = {
 
   createShuttlecock: async (warehouseId, payload) => {
     const response = await axiosClient.post(
-      `/products/warehouse/${warehouseId}/shuttlecocks`,
+      `/warehouses/${warehouseId}/shuttlecocks`,
       payload
     );
     return response.data;
@@ -26,14 +26,14 @@ const shuttlecockService = {
 
   updateShuttlecock: async (warehouseId, productId, payload) => {
     await axiosClient.put(
-      `/products/warehouse/${warehouseId}/shuttlecocks/${productId}`,
+      `/warehouses/${warehouseId}/shuttlecocks/${productId}`,
       payload
     );
   },
 
   deleteShuttlecock: async (warehouseId, productId) => {
     await axiosClient.delete(
-      `/products/warehouse/${warehouseId}/shuttlecocks/${productId}`
+      `/warehouses/${warehouseId}/shuttlecocks/${productId}`
     );
   },
 };

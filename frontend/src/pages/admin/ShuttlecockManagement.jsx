@@ -171,7 +171,7 @@ const ShuttlecockManagement = () => {
     0,
   );
   const lowStockCount = shuttlecocks.filter(
-    (item) => (item.quantity || 0) <= 10,
+    (item) => (item.quantity || 0) > 0 && (item.quantity || 0) < 20,
   ).length;
   const outOfStockCount = shuttlecocks.filter(
     (item) => (item.quantity || 0) === 0,
@@ -180,13 +180,14 @@ const ShuttlecockManagement = () => {
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
+        {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black text-gray-900 tracking-tight">
               Quản lý cầu lông
             </h1>
             <p className="text-gray-600 text-sm mt-1">
-              CRUD danh mục cầu lông theo từng kho.
+              Quản lý danh mục cầu lông theo từng kho hàng.
             </p>
           </div>
           <button
@@ -199,6 +200,7 @@ const ShuttlecockManagement = () => {
           </button>
         </div>
 
+        {/* Warehouse Selector */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
           <label className="block text-xs font-medium text-gray-700 mb-1.5">
             Kho hàng
@@ -219,6 +221,7 @@ const ShuttlecockManagement = () => {
           </select>
         </div>
 
+        {/* Statistics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading ? (
             <>
@@ -228,34 +231,81 @@ const ShuttlecockManagement = () => {
             </>
           ) : (
             <>
-              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                <p className="text-gray-600 font-medium text-sm">
-                  Tổng loại cầu
-                </p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {totalElements}
-                </p>
+              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between h-32">
+                <div className="flex justify-between items-start">
+                  <p className="text-gray-600 font-medium text-sm">
+                    Tổng loại cầu
+                  </p>
+                  <span className="material-symbols-outlined text-purple-600 bg-purple-100 p-1 rounded-md text-xl">
+                    sports_baseball
+                  </span>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {totalElements}
+                  </p>
+                  <div className="flex items-center gap-1 text-purple-600 text-xs font-medium mt-1">
+                    <span className="material-symbols-outlined text-base">
+                      inventory
+                    </span>
+                    <span>Trong kho đã chọn</span>
+                  </div>
+                </div>
               </div>
-              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                <p className="text-gray-600 font-medium text-sm">
-                  Tổng tồn kho (trang hiện tại)
-                </p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {totalStock}
-                </p>
+
+              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between h-32">
+                <div className="flex justify-between items-start">
+                  <p className="text-gray-600 font-medium text-sm">
+                    Tổng tồn kho
+                  </p>
+                  <span className="material-symbols-outlined text-blue-600 bg-blue-100 p-1 rounded-md text-xl">
+                    inventory_2
+                  </span>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {totalStock}
+                  </p>
+                  <div className="flex items-center gap-1 text-blue-600 text-xs font-medium mt-1">
+                    <span className="material-symbols-outlined text-base">
+                      package_2
+                    </span>
+                    <span>Trang hiện tại</span>
+                  </div>
+                </div>
               </div>
-              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                <p className="text-gray-600 font-medium text-sm">
-                  Cảnh báo tồn kho
-                </p>
-                <p className="text-lg font-bold text-gray-900 mt-2">
-                  Sắp hết: {lowStockCount} | Hết: {outOfStockCount}
-                </p>
+
+              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between h-32">
+                <div className="flex justify-between items-start">
+                  <p className="text-gray-600 font-medium text-sm">
+                    Cảnh báo tồn kho
+                  </p>
+                  <span className="material-symbols-outlined text-orange-600 bg-orange-100 p-1 rounded-md text-xl">
+                    warning
+                  </span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold border border-yellow-200">
+                      <span className="material-symbols-outlined text-sm">
+                        trending_down
+                      </span>
+                      Sắp hết: {lowStockCount}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-600 text-xs font-bold border border-red-200">
+                      <span className="material-symbols-outlined text-sm">
+                        block
+                      </span>
+                      Hết hàng: {outOfStockCount}
+                    </span>
+                  </div>
+                </div>
               </div>
             </>
           )}
         </div>
 
+        {/* Search & Table */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-200 flex flex-col lg:flex-row gap-4 items-center justify-between">
             <div className="relative w-full lg:w-96">
@@ -296,7 +346,12 @@ const ShuttlecockManagement = () => {
                         colSpan="6"
                         className="p-12 text-center text-gray-500"
                       >
-                        Không có dữ liệu cầu lông
+                        <div className="flex flex-col items-center gap-2">
+                          <span className="material-symbols-outlined text-4xl text-gray-300">
+                            sports_baseball
+                          </span>
+                          <span>Không có dữ liệu cầu lông</span>
+                        </div>
                       </td>
                     </tr>
                   ) : (
@@ -305,22 +360,34 @@ const ShuttlecockManagement = () => {
                         key={item.id}
                         className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
                       >
-                        <td className="p-4 font-semibold text-gray-900">
-                          <button
-                            onClick={() => handleViewDetail(item)}
-                            className="text-left hover:text-purple-600 hover:underline transition-colors"
-                          >
-                            {item.name}
-                          </button>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <span className="material-symbols-outlined text-purple-500 bg-purple-50 p-1.5 rounded-lg text-lg">
+                              sports_baseball
+                            </span>
+                            <div className="flex flex-col items-start">
+                              <button
+                                onClick={() => handleViewDetail(item)}
+                                className="text-left font-bold text-gray-900 hover:text-purple-600 hover:underline transition-colors"
+                              >
+                                {item.name}
+                              </button>
+                              <span className="text-gray-500 text-xs">
+                                ID: #{item.id}
+                              </span>
+                            </div>
+                          </div>
                         </td>
-                        <td className="p-4 text-gray-600">{item.sku || "-"}</td>
-                        <td className="p-4 text-gray-900">
+                        <td className="p-4 text-gray-600 font-mono text-xs">
+                          {item.sku || "-"}
+                        </td>
+                        <td className="p-4 text-blue-700 font-semibold">
                           {Number(item.basePrice || 0).toLocaleString("vi-VN")}{" "}
                           đ
                         </td>
                         <td className="p-4">
                           <span
-                            className={`font-bold ${(item.quantity || 0) <= 10 ? "text-red-600" : "text-gray-900"}`}
+                            className={`inline-flex items-center gap-1 font-bold rounded-full px-2.5 py-1 text-xs ${item.quantity === 0 ? "bg-red-100 text-red-600 border border-red-200" : item.quantity < 20 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" : "bg-green-100 text-green-700 border border-green-200"}`}
                           >
                             {item.quantity || 0}
                           </span>
@@ -370,14 +437,17 @@ const ShuttlecockManagement = () => {
           {totalPages > 1 && (
             <div className="p-4 border-t border-gray-200 flex items-center justify-between">
               <p className="text-sm text-gray-600">
-                Trang {page + 1}/{totalPages}
+                Trang {page + 1} / {totalPages} — Tổng {totalElements} loại cầu
               </p>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
                 >
+                  <span className="material-symbols-outlined text-base">
+                    chevron_left
+                  </span>
                   Trước
                 </button>
                 <button
@@ -385,9 +455,12 @@ const ShuttlecockManagement = () => {
                     setPage((p) => Math.min(totalPages - 1, p + 1))
                   }
                   disabled={page >= totalPages - 1}
-                  className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
                 >
                   Sau
+                  <span className="material-symbols-outlined text-base">
+                    chevron_right
+                  </span>
                 </button>
               </div>
             </div>
@@ -395,6 +468,7 @@ const ShuttlecockManagement = () => {
         </div>
       </div>
 
+      {/* Modals */}
       <ShuttlecockFormModal
         isOpen={showFormModal}
         onClose={() => {
@@ -420,13 +494,11 @@ const ShuttlecockManagement = () => {
         title="Xóa loại cầu"
         message={`Bạn có chắc chắn muốn xóa "${deletingItem?.name}"? Hành động này không thể hoàn tác.`}
         onConfirm={handleDelete}
-        onCancel={() => {
-          setShowDeleteDialog(false);
-          setDeletingItem(null);
-        }}
+        onCancel={() => setShowDeleteDialog(false)}
         loading={deleteLoading}
       />
 
+      {/* Toast Notification */}
       {toast && (
         <Toast
           message={toast.message}
