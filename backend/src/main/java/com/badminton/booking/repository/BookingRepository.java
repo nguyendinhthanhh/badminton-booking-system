@@ -181,4 +181,32 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
             "FROM Booking b WHERE b.playDate BETWEEN :fromDate AND :toDate " +
             "GROUP BY b.status")
     List<StatusCountView> countBookingsByStatusBetween(@Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
+
+
+    /**
+     * Returns the list of court IDs that are already booked (occupied) for the given
+     * play date and desired time window.
+     *
+     * Overlap logic: an existing booking blocks a court when
+     *   desiredStartTime < effectiveEndTime  AND  desiredEndTime > startTime
+     *
+     * Open-ended bookings (openEnded = true) have no endTime stored in the DB.
+     * For those, a virtual end time is computed inline as:
+     *   startTime + estimatedDurationMinutes (minutes)
+     *
+     * Statuses excluded: CANCELLED, NO_SHOW (these do not occupy the court).
+     */
+    @Query(value = "SELECT court_id FROM bookings " +
+            "WHERE play_date = :playDate " +
+            "AND status NOT IN ('CANCELLED', 'NO_SHOW') " +
+            "AND (" +
+            "  (start_time < :endTime AND end_time > :startTime) " +
+            "  OR (end_time IS NULL AND start_time < :endTime AND (start_time + CAST((estimated_duration_minutes || ' minutes') AS INTERVAL)) > :startTime) " +
+            ")", nativeQuery = true)
+    List<Integer> findBookedCourtIds(
+            @Param("playDate") LocalDate playDate,
+            @Param("startTime") LocalTime startTime,
+            @Param("endTime") LocalTime endTime
+    );
+
 }
