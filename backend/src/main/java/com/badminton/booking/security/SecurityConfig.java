@@ -63,6 +63,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/courts/*/available-slots").permitAll()
                         .requestMatchers("/api/courts/*/detail").permitAll()
                         .requestMatchers("/api/courts/filter").permitAll()
+                        .requestMatchers("/api/courts/available").permitAll()
+
+                        // AI Chatbot – public, no auth required
+                        .requestMatchers("/api/chatbot/**").permitAll()
 
                         // API booking công khai cho customer
                         .requestMatchers("/api/bookings/check-availability").permitAll()

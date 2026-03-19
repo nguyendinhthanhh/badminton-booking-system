@@ -7,6 +7,8 @@ import com.badminton.booking.dto.response.CourtDetailResponse;
 import org.springframework.data.domain.Slice;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
 
 public interface BadmintonCourtService {
 
@@ -30,7 +32,7 @@ public interface BadmintonCourtService {
 
     /**
      * Filter courts by price, type, and status
-     * 
+     *
      * @param minPrice Minimum price per hour (optional)
      * @param maxPrice Maximum price per hour (optional)
      * @param types    List of court types (optional)
@@ -46,4 +48,18 @@ public interface BadmintonCourtService {
             com.badminton.booking.entity.enums.CourtStatus status,
             int page,
             int size);
+
+    /**
+     * Trả về danh sách sân ĐANG HOẠT ĐỘNG (ACTIVE) mà không bị trùng lịch
+     * với khoảng thời gian khách muốn chơi.
+     *
+     * @param playDate        Ngày muốn chơi
+     * @param desiredStart    Giờ bắt đầu mong muốn
+     * @param desiredEnd      Giờ kết thúc mong muốn
+     * @return Danh sách sân còn trống, đã được enrich đầy đủ thông tin giá
+     */
+    List<BadmintonCourtResponse> getAvailableCourts(
+            LocalDate playDate,
+            LocalTime desiredStart,
+            LocalTime desiredEnd);
 }

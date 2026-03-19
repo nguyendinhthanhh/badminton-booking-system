@@ -673,4 +673,52 @@ public class BadmintonCourtServiceImpl implements BadmintonCourtService {
 
         return new SliceImpl<>(enrichedList, pageable, filteredCourts.hasNext());
     }
+
+    // ===== AVAILABLE COURTS ─────────────────────────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BadmintonCourtResponse> getAvailableCourts(
+            LocalDate playDate,
+            LocalTime desiredStart,
+            LocalTime desiredEnd) {
+
+        // ── 1. Find which courts are occupied for the requested slot ──────────
+        List<Integer> bookedIds = bookingRepository.findBookedCourtIds(
+                playDate, desiredStart, desiredEnd);
+
+        // ── 2. Fetch candidate courts (images eagerly loaded to avoid N+1) ───
+        List<BadmintonCourt> candidates;
+        if (bookedIds == null || bookedIds.isEmpty()) {
+            // No conflicts → every ACTIVE court is a candidate
+            candidates = badmintonCourtRepo.findByStatusWithImages(CourtStatus.ACTIVE);
+        } else {
+            // Some courts are taken → exclude them
+            candidates = badmintonCourtRepo.findByStatusAndIdNotInWithImages(
+                    CourtStatus.ACTIVE, bookedIds);
+        }
+
+        if (candidates.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // ── 3. Bulk-enrich responses (reuse existing helpers: 2 extra queries) ─
+        List<Integer> candidateIds = candidates.stream()
+                .map(BadmintonCourt::getId)
+                .collect(Collectors.toList());
+
+        Map<Integer, CourtPriceSummary> priceSummaryMap = getPriceSummaryMap(candidateIds);
+        Map<Integer, Long> bookedMinutesMap = getBookedMinutesMap(playDate);
+        LocalTime now = LocalTime.now();
+
+        List<BadmintonCourtResponse> result = candidates.stream()
+                .map(court -> toEnrichedResponseBulk(court, priceSummaryMap, bookedMinutesMap, now))
+                .collect(Collectors.toList());
+
+        log.debug("getAvailableCourts(date={}, {}-{}): {} available / {} booked courts",
+                playDate, desiredStart, desiredEnd, result.size(),
+                bookedIds == null ? 0 : bookedIds.size());
+
+        return result;
+    }
 }

@@ -117,4 +117,46 @@ public class BadmintonCourtController {
 
         return ResponseEntity.ok(responses);
     }
+
+    /**
+     * GET /api/courts/available?date=2026-03-20&startTime=08:00&endTime=10:00
+     *
+     * Returns all ACTIVE courts that have NO booking overlapping the requested slot.
+     * <p>
+     * Query parameters:
+     * - date      (required) – ISO date, e.g. 2026-03-20
+     * - startTime (required) – ISO local time, e.g. 08:00
+     * - endTime   (required) – ISO local time, e.g. 10:00
+     */
+    @Operation(
+            summary = "Get Available Courts",
+            description = "Returns all active courts that are NOT booked for the given date and time window.")
+    @GetMapping("/available")
+    public ResponseEntity<?> getAvailableCourts(
+            @Parameter(description = "Play date (yyyy-MM-dd)", example = "2026-03-20", required = true)
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+
+            @Parameter(description = "Desired start time (HH:mm)", example = "08:00", required = true)
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) java.time.LocalTime startTime,
+
+            @Parameter(description = "Desired end time (HH:mm)", example = "10:00", required = true)
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) java.time.LocalTime endTime) {
+
+        // ── Basic input validation ────────────────────────────────────────────
+        if (date == null || startTime == null || endTime == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .body("date, startTime and endTime are all required.");
+        }
+        if (!endTime.isAfter(startTime)) {
+            return ResponseEntity
+                    .badRequest()
+                    .body("endTime must be strictly after startTime.");
+        }
+
+        List<com.badminton.booking.dto.response.BadmintonCourtResponse> available =
+                badmintonCourtService.getAvailableCourts(date, startTime, endTime);
+
+        return ResponseEntity.ok(available);
+    }
 }
