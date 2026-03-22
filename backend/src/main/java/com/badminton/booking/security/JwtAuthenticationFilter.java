@@ -67,10 +67,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api-docs/**"
     );
 
-    // Danh sách các POST endpoint không cần JWT (tạo booking công khai)
-    private static final List<String> PUBLIC_POST_PATHS = List.of(
-            "/api/bookings"
-    );
+    // Danh sách các POST endpoint không cần JWT
+    private static final List<String> PUBLIC_POST_PATHS = List.of();
 
     /**
      * Bỏ qua filter với các public endpoint — tránh lỗi 401/403
