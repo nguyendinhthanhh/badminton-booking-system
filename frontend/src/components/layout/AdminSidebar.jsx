@@ -15,6 +15,7 @@ const AdminSidebar = () => {
     { path: '/admin/bookings', icon: 'event_available', label: 'Lịch đặt sân' },
     { path: '/admin/booking-management', icon: 'receipt_long', label: 'Quản lý Booking' },
     { path: '/admin/shuttlecocks', icon: 'deployed_code', label: 'Quản lý cầu lông' },
+    { path: '/admin/rackets', icon: 'sports_tennis', label: 'Quản lý vợt' },
     { path: '/admin/system-config', icon: <FaCogs />, label: 'Cấu hình hệ thống' }
   ];
 
