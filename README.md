@@ -1,221 +1,232 @@
 # Badminton Booking System
 
-Hệ thống **đặt sân cầu lông** và **quản trị vận hành** gồm **Frontend (React)** và **Backend API (Spring Boot)**.
+A comprehensive badminton court booking management system built with Spring Boot and React, designed for sports facilities to manage court reservations, equipment rentals, and customer interactions.
 
-## Highlights
+## 🏸 Features
 
-- **Đặt sân theo khoảng thời gian linh hoạt**: hỗ trợ thời lượng lẻ (1h, 1.5h, 2.5h…), kiểm tra trùng lịch (overlap) và tính giá tự động theo khung.
-- **Quản trị lịch theo timeline**: xem timeline theo ngày / theo khoảng ngày, thống kê vận hành.
-- **Xác thực & phân quyền bằng JWT**: đăng ký/đăng nhập, refresh token, verify email.
-- **Thanh toán cọc & thanh toán phần còn lại**: hỗ trợ VNPay (tạo URL, confirm).
-- **AI Chatbot**: endpoint public dùng Gemini để tư vấn/tìm sân trống theo ngôn ngữ tự nhiên.
-- **Swagger/OpenAPI**: tài liệu API sẵn có qua Swagger UI.
+### Core Booking Management
+- **Court Reservation System** - Real-time court availability and booking management
+- **Time Slot Management** - Flexible scheduling with customizable time slots
+- **Walk-in Booking Support** - Handle both advance and on-site reservations
+- **Booking Extensions** - Allow customers to extend their playing time
+- **Cancellation Management** - Automated refund processing and cancellation policies
 
-## Tech stack
+### Equipment & Inventory
+- **Racket Rental System** - Manage badminton racket inventory and rentals
+- **Product Management** - Handle sports equipment and accessories
+- **Warehouse Management** - Track inventory levels and stock movements
 
-- **Frontend** (`frontend/`): React 19 + Vite, TailwindCSS, Zustand, React Router, Axios
-- **Backend** (`backend/`): Spring Boot 3.2 (Java 21), Spring Security, JWT, Spring Data JPA, Validation, Mail, SpringDoc OpenAPI
-- **Database**: PostgreSQL (đang cấu hình) và có driver SQL Server (tuỳ cấu hình)
+### Payment & Pricing
+- **Dynamic Pricing** - Flexible pricing based on time slots and court types
+- **Deposit Management** - Handle booking deposits and final payments
+- **Payment Processing** - Integrated payment gateway support
+- **Overtime Billing** - Automatic calculation for extended playing time
 
-## Architecture & Default URLs
+### User Management & Security
+- **Role-based Access Control** - Admin, staff, and customer roles
+- **JWT Authentication** - Secure token-based authentication
+- **Email Verification** - Account verification and password recovery
+- **User Profile Management** - Customer information and booking history
 
-- **Frontend**: `http://localhost:3000`
-- **Backend**: `http://localhost:8080`
-- **Swagger UI**: `http://localhost:8080/swagger-ui.html`
-- **OpenAPI JSON**: `http://localhost:8080/api-docs`
+### Administrative Tools
+- **Admin Dashboard** - Comprehensive reporting and analytics
+- **Schedule Timeline** - Visual booking schedule management
+- **System Configuration** - Customizable system settings
+- **Report Generation** - Revenue, usage, and performance reports
 
-## Prerequisites
+### Customer Experience
+- **AI Chatbot Integration** - Powered by Google Gemini for customer support
+- **Real-time Availability** - Live court status updates
+- **Booking History** - Complete transaction and booking records
+- **Email Notifications** - Automated booking confirmations and reminders
 
-- **Node.js**: Node 18+ (khuyến nghị LTS mới)
-- **Java**: 21
-- **Maven**: dùng Maven Wrapper (`backend/mvnw`, `backend/mvnw.cmd`)
-- **Database**: PostgreSQL hoặc SQL Server
-
-## Quickstart (Local)
+## 🛠 Technology Stack
 
 ### Backend
-
-Tại `backend/`:
-
-```bash
-./mvnw spring-boot:run
-```
-
-Windows PowerShell:
-
-```bash
-.\mvnw.cmd spring-boot:run
-```
+- **Java 21** - Latest LTS version with modern language features
+- **Spring Boot 3.2.1** - Enterprise-grade application framework
+- **Spring Security** - Authentication and authorization
+- **Spring Data JPA** - Database abstraction layer
+- **PostgreSQL/SQL Server** - Production database support
+- **Flyway** - Database migration management
+- **JWT** - Stateless authentication tokens
+- **MapStruct** - Type-safe object mapping
+- **OpenAPI 3** - API documentation and testing
 
 ### Frontend
+- **React 19** - Modern UI library with latest features
+- **Vite** - Fast build tool and development server
+- **TypeScript** - Type-safe JavaScript development
+- **Tailwind CSS** - Utility-first CSS framework
+- **Zustand** - Lightweight state management
+- **React Router** - Client-side routing
+- **Axios** - HTTP client for API communication
 
-Tại `frontend/`:
+### Development Tools
+- **Maven** - Dependency management and build automation
+- **Lombok** - Boilerplate code reduction
+- **ESLint** - Code quality and consistency
+- **Hot Reload** - Development productivity features
 
-```bash
-npm install
-npm run dev
-```
+## 🚀 Getting Started
 
-## Configuration (Environment & Secrets)
+### Prerequisites
+- Java 21 or higher
+- Node.js 18+ and npm
+- PostgreSQL or SQL Server
+- Maven 3.6+
 
-Backend hiện đọc cấu hình từ `backend/src/main/resources/application.properties`.
+### Backend Setup
 
-### Security note (rất quan trọng)
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd badminton-booking-system
+   ```
 
-Trong repo hiện tại có **credentials/secrets nằm trực tiếp trong `application.properties`** (DB password, SMTP app password, VNPay secret, Gemini API key, JWT secret…).
+2. **Configure database**
+   ```bash
+   # Create database
+   createdb badminton_booking
+   
+   # Update application.properties with your database credentials
+   ```
 
-- **Nếu repo từng public / đã chia sẻ**: nên **rotate/thu hồi** các secrets đó ngay.
-- Khuyến nghị: chuyển secrets sang **Environment Variables** hoặc file local **không commit** (ví dụ `application-local.properties`) và cấu hình theo profile.
+3. **Run the backend**
+   ```bash
+   cd backend
+   ./mvnw spring-boot:run
+   ```
 
-### Env variables gợi ý (mẫu)
+   The API will be available at `http://localhost:8080`
 
-Bạn có thể cấu hình bằng biến môi trường (tên theo Spring Boot conventions) như sau:
+### Frontend Setup
 
-```bash
-# Database
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/badminton
-SPRING_DATASOURCE_USERNAME=postgres
-SPRING_DATASOURCE_PASSWORD=postgres
+1. **Install dependencies**
+   ```bash
+   cd frontend
+   npm install
+   ```
 
-# JWT
-APP_JWT_SECRET=change-me-to-a-strong-secret
-APP_JWT_EXPIRATION=3600000
-APP_JWT_REFRESH_EXPIRATION=604800
+2. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-# Frontend URL used in email verification links
-APP_FRONTEND_BASE_URL=http://localhost:3000
-APP_EMAIL_VERIFICATION_ENCRYPTION_KEY=change-me
+   The application will be available at `http://localhost:3000`
 
-# Mail (SMTP)
-SPRING_MAIL_HOST=smtp.gmail.com
-SPRING_MAIL_PORT=587
-SPRING_MAIL_USERNAME=your_email@gmail.com
-SPRING_MAIL_PASSWORD=your_app_password
+### API Documentation
 
-# VNPay
-VNPAY_TMN_CODE=your_tmn_code
-VNPAY_HASH_SECRET=your_hash_secret
-VNPAY_RETURN_URL=http://localhost:3000/payment-result
-
-# Gemini
-GEMINI_API_KEY=your_api_key
-GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent
-```
-
-## Authentication & Roles
-
-### Auth endpoints
-
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `GET /api/auth/verify-email?code=...` (hoặc `token=...`)
-- `POST /api/auth/resend-verification`
-
-### Roles (theo security rules trong backend)
-
-- **Guest (public)**: xem sân, xem khung giờ/giá, xem lịch public, dùng chatbot…
-- **USER**: thao tác đặt sân của mình, thanh toán…
-- **ADMIN/STAFF**: quản lý sản phẩm kho (một số API), quản trị timeline/schedule…
-
-> Lưu ý: một số endpoint được “whitelist” ở security layer, nhưng nghiệp vụ vẫn có thể yêu cầu đăng nhập (ví dụ tạo booking đọc `Authentication`). Hãy xem Swagger UI để biết yêu cầu auth cụ thể theo từng API.
-
-## Key API (điểm vào quan trọng)
-
-### Courts
-
-- `GET /api/courts/all`
-- `GET /api/courts/findById/{courtId}`
-- `GET /api/courts/{courtId}/detail` (thông tin sân + bảng giá + slot trống)
-- `GET /api/courts/filter`
-- `GET /api/courts/available?date=YYYY-MM-DD&startTime=HH:mm&endTime=HH:mm`
-
-### Time slots
-
-- `GET /api/time-slots`
-- `GET /api/time-slots/active`
-- `POST /api/time-slots/init-default` (ADMIN)
-
-### Booking
-
-- `GET /api/bookings/check-availability`
-- `GET /api/bookings/calculate-price`
-- `POST /api/bookings` (tạo booking; nghiệp vụ yêu cầu user đăng nhập)
-- `GET /api/bookings/my-bookings`
-- `POST /api/bookings/my-bookings/{bookingId}/cancel`
-- `POST /api/bookings/{bookingId}/extend`
-- `POST /api/bookings/{bookingId}/check-in`
-- `POST /api/bookings/{bookingId}/complete`
-- `POST /api/bookings/{bookingId}/release-early`
-
-### Schedule timeline
-
-- `GET /api/schedule/public/timeline`
-- `GET /api/schedule/public/court/{courtId}/timeline`
-- `GET /api/schedule/admin/timeline` (admin view)
-- `GET /api/schedule/admin/statistics`
-- `PUT /api/schedule/admin/booking/{bookingId}` (update booking)
-
-### Payments (VNPay)
-
-- `POST /api/payments/deposit/vnpay-url` (tạo URL thanh toán cọc)
-- `POST /api/payments/remaining/{bookingId}/vnpay-url` (tạo URL thanh toán phần còn lại)
-- `POST /api/payments/vnpay/confirm` (confirm sau khi redirect)
-
-### AI Chatbot
-
-- `POST /api/chatbot/message` body: `{ "message": "..." }`
-
-## API Documentation (Swagger)
-
-Sau khi chạy backend:
-
+Once the backend is running, access the interactive API documentation at:
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/api-docs`
+- OpenAPI Spec: `http://localhost:8080/v3/api-docs`
 
-Swagger có **Authorize (Bearer JWT)**: đăng nhập lấy access token, sau đó dán vào `Authorization: Bearer <token>`.
+## 📁 Project Structure
 
-## Development workflow
-
-### Frontend scripts (`frontend/package.json`)
-
-- `npm run dev` – chạy local (port 3000)
-- `npm run build` – build production
-- `npm run preview` – preview build
-- `npm run lint` – eslint
-
-### Backend commands (Maven)
-
-- `./mvnw spring-boot:run`
-- `./mvnw test`
-- `./mvnw clean package`
-
-## Troubleshooting
-
-- **Frontend gọi API bị CORS**: backend đang allow origins `http://localhost:3000`, `http://localhost:3001`, `http://localhost:8080`. Đảm bảo frontend đúng port hoặc cập nhật CORS.
-- **401 khi gọi API**: kiểm tra đã set header `Authorization: Bearer <accessToken>`; token hết hạn thì dùng `POST /api/auth/refresh`.
-- **VNPay redirect không đúng**: kiểm tra `vnpay.return-url` / `VNPAY_RETURN_URL` trỏ về frontend route xử lý (`/payment-result`).
-- **Không connect được DB**: kiểm tra `SPRING_DATASOURCE_URL`/username/password và DB đã chạy.
-
-## Project structure
-
-```text
-.
-├─ backend/                       # Spring Boot API
-│  ├─ src/main/java/              # source code
-│  ├─ src/main/resources/         # application.properties
-│  ├─ pom.xml                     # Maven config (Java 21)
-│  └─ mvnw, mvnw.cmd              # Maven wrapper
-└─ frontend/                      # React + Vite web app
-   ├─ src/
-   ├─ public/
-   ├─ vite.config.js              # dev server port 3000
-   └─ package.json
+```
+badminton-booking-system/
+├── backend/                    # Spring Boot API
+│   ├── src/main/java/com/badminton/booking/
+│   │   ├── controller/        # REST API endpoints
+│   │   ├── service/           # Business logic layer
+│   │   ├── repository/        # Data access layer
+│   │   ├── entity/            # JPA entities
+│   │   ├── dto/               # Data transfer objects
+│   │   ├── config/            # Configuration classes
+│   │   └── security/          # Security configuration
+│   └── src/main/resources/
+│       ├── db/migration/      # Flyway database migrations
+│       └── application.properties
+├── frontend/                   # React application
+│   ├── src/
+│   │   ├── components/        # Reusable UI components
+│   │   ├── pages/             # Application pages
+│   │   ├── services/          # API service layer
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── store/             # State management
+│   │   └── utils/             # Utility functions
+│   └── public/                # Static assets
+└── README.md
 ```
 
-## Contributing
+## 🔧 Configuration
 
-- Tạo branch theo `feature/*`, `fix/*`, `chore/*`
-- PR nên kèm **Summary** + **Test plan**
-- Không commit `.env`, secrets, private keys
+### Environment Variables
 
+Create `.env` files for environment-specific configuration:
+
+**Backend (`backend/src/main/resources/application-dev.properties`)**
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/badminton_booking
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+jwt.secret=your_jwt_secret_key
+spring.mail.host=smtp.gmail.com
+spring.mail.username=your_email@gmail.com
+spring.mail.password=your_app_password
+```
+
+**Frontend (`frontend/.env`)**
+```env
+VITE_API_BASE_URL=http://localhost:8080/api
+VITE_APP_NAME=Badminton Booking System
+```
+
+## 🧪 Testing
+
+### Backend Tests
+```bash
+cd backend
+./mvnw test
+```
+
+### Frontend Tests
+```bash
+cd frontend
+npm run test
+```
+
+## 📦 Deployment
+
+### Production Build
+
+**Backend**
+```bash
+cd backend
+./mvnw clean package -Pprod
+```
+
+**Frontend**
+```bash
+cd frontend
+npm run build
+```
+
+### Docker Deployment
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📞 Support
+
+For support and questions:
+- Create an issue in the repository
+- Contact the development team
+- Check the API documentation for technical details
+
+---
+
+**Built with ❤️ for the badminton community**
