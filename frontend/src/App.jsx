@@ -24,7 +24,6 @@ import RacketManagement from './pages/admin/RacketManagement';
 import AuthPage from './pages/auth/AuthPage.jsx';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx';
 import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
-import ChatBox from './components/chatbot/ChatBox.jsx';
 import './App.css';
 
 function App() {
@@ -72,7 +71,6 @@ function App() {
         {/* 404 */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <ChatBox />
     </Router>
   );
 }
