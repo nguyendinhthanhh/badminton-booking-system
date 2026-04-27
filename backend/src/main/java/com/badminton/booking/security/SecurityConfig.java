@@ -73,6 +73,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/bookings/calculate-price").permitAll()
                         .requestMatchers("/api/bookings/court/*/available-slots").permitAll()
                         .requestMatchers("/api/bookings/court/*").permitAll()
+                        .requestMatchers("/api/bookings").permitAll() // POST create booking
                         // Allow only GET for warehouses and shuttlecocks publicly; other methods require auth
                         .requestMatchers(HttpMethod.GET, "/api/warehouses/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/warehouses/*/shuttlecocks").permitAll()
